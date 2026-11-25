@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 
 
 class ContentBlock(BaseModel):
-    type: Literal["text", "tool_use", "tool_result", "image"]
+    type: Literal["text", "tool_use", "tool_result", "image", "other"]
     text: str | None = None
     tool_use_id: str | None = None
     tool_name: str | None = None

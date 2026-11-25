@@ -15,7 +15,9 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from agentrelay.config import load_config
 from agentrelay.schema import SCHEMA_VERSION, Run, Step, sha256_hex
+from agentrelay.sdk.redact import Redactor
 from agentrelay.store.index import RunFilter, RunIndex, RunSummary
 
 BLOB_THRESHOLD_BYTES = 16 * 1024
@@ -94,11 +96,24 @@ class BlobStore:
 
 
 class RunStore:
-    def __init__(self, home: Path | None = None) -> None:
+    """Reads and writes runs. Every value is redacted before it is written.
+
+    The default redactor uses the built-in secret patterns plus `agentrelay.toml` settings.
+    """
+
+    def __init__(self, home: Path | None = None, *, redactor: Redactor | None = None) -> None:
         self.home = home if home is not None else resolve_home()
         self.runs_dir = self.home / "runs"
         self.blobs = BlobStore(self.home / "blobs")
         self.index = RunIndex(self.home / "index.db")
+        if redactor is None:
+            cfg = load_config(self.home)
+            redactor = Redactor(pii=cfg.redact_pii, extra_patterns=cfg.redact_patterns)
+        self.redactor = redactor
+
+    def _prepare(self, obj: Any) -> Any:
+        """Redact, then move large strings to blobs. Everything written goes through here."""
+        return self.blobs.externalize(self.redactor.redact(obj))
 
     # ---- paths -------------------------------------------------------------------------
     def run_dir(self, run_id: str) -> Path:
@@ -119,7 +134,7 @@ class RunStore:
 
     def append_step(self, step: Step) -> None:
         """Append one step and flush, so it survives a crash."""
-        line = json.dumps(self.blobs.externalize(step.model_dump(mode="json")), ensure_ascii=False)
+        line = json.dumps(self._prepare(step.model_dump(mode="json")), ensure_ascii=False)
         with self._steps_path(step.run_id).open("a", encoding="utf-8") as fh:
             fh.write(line + "\n")
             fh.flush()
@@ -133,14 +148,14 @@ class RunStore:
         """Write a complete run (metadata and all steps) in one go."""
         lines = [_header_line()]
         for step in run.steps:
-            dumped = self.blobs.externalize(step.model_dump(mode="json"))
+            dumped = self._prepare(step.model_dump(mode="json"))
             lines.append(json.dumps(dumped, ensure_ascii=False) + "\n")
         _atomic_write(self._steps_path(run.id), "".join(lines))
         self.finish_run(run)
 
     def _write_meta(self, run: Run) -> None:
         meta = run.model_dump(mode="json", by_alias=True, exclude={"steps"})
-        data = json.dumps(self.blobs.externalize(meta), ensure_ascii=False, indent=2)
+        data = json.dumps(self._prepare(meta), ensure_ascii=False, indent=2)
         _atomic_write(self.run_dir(run.id) / "run.json", data)
 
     # ---- reading -----------------------------------------------------------------------
@@ -199,10 +214,10 @@ class RunStore:
         """Save `obj` under `artifacts/<name>`. Strings are written as-is (e.g. HTML)."""
         path = self.run_dir(self.resolve(run_id)) / "artifacts" / name
         if isinstance(obj, str):
-            _atomic_write(path, obj)
+            _atomic_write(path, self.redactor.redact_text(obj))
             return path
         data = obj.model_dump(mode="json") if isinstance(obj, BaseModel) else dict(obj)
-        payload = {"schema": SCHEMA_VERSION, **data}
+        payload = self.redactor.redact({"schema": SCHEMA_VERSION, **data})
         _atomic_write(path, json.dumps(payload, ensure_ascii=False, indent=2))
         return path
 

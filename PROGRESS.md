@@ -17,13 +17,15 @@ criterion passes.
 - [x] Accept: FakeLLM scripted + rules; determinism; p=0.8 fires 399/500 = 79.8%; `when_all`/`unless_any`
 
 ## M2 — Capture SDK
-- [ ] `relay.wrap` (Anthropic, OpenAI; sync, async, streaming), `@relay.tool`, `relay.run`, `@relay.entrypoint`
-- [ ] Dependency linking, redaction, `relay init`, `relay record`, `relay ls`, `relay show`
-- [ ] Three example agents run with `--provider fake`
-- [ ] Accept: file_cleanup run recorded with correct order, kinds, `depends_on`, tokens
-- [ ] Accept: simulated disk error does not raise into user code
-- [ ] Accept: secret patterns never appear in stored files
-- [ ] Accept: `relay show last` renders the run
+- [x] `relay.wrap` (Anthropic, OpenAI; sync, async, streaming), `@relay.tool`, `relay.run`, `@relay.entrypoint`
+- [x] Dependency linking, redaction, `relay init`, `relay record`, `relay ls`, `relay show`
+- [x] Three example agents run with `--provider fake` (each bug reproduces; `--fixed` removes it, 0/40)
+- [x] Accept: file_cleanup run recorded with correct order, kinds, `depends_on`, tokens
+- [x] Accept: simulated disk error does not raise into user code
+- [x] Accept: secret patterns never appear in stored files
+- [x] Accept: `relay show last` renders the run
+- Measured recording overhead (no disk I/O): median 0.18 ms, p95 0.23 ms per LLM step with a
+  21-message, ~17 KB request. Target: < 2 ms.
 
 ## M3 — Decision replay, oracles, statistical engine
 - [ ] `replay/decision.py`, `oracles/`, `stats/`, cache, budget, `relay try`
@@ -98,6 +100,44 @@ criterion passes.
 - M1: `Failure`, `ContextUnit`, and `RateEstimate` are defined in `schema.py` now, as the repo
   layout lists them there; their behavior arrives in M3/M4.
 
+- M2: anthropic 2.x and openai 3.x are built on `httpx2`, not `httpx`, and reject `httpx` clients.
+  `providers/fake_http.py` serves FakeLLM behind an `httpx2.MockTransport` that speaks each API's
+  real wire format (JSON and server-sent events), so tests and `--provider fake` run the genuine
+  SDK code paths, streaming included, with no network. A FakeLLM exception becomes an HTTP 500.
+- M2: async methods in these SDKs are not `async def`, so the wrapper calls the real method and
+  checks whether the result is awaitable instead of inspecting the function.
+- M2: added `"other"` to `ContentBlock.type` for blocks the spec's list doesn't cover (thinking,
+  documents, server tools, reasoning items). They are kept verbatim in `raw` and will be treated
+  as non-removable, like images.
+- M2: redaction runs inside `RunStore` (every write goes through `_prepare`: redact, then blob),
+  so nothing can reach disk unredacted, whoever writes it. `request_hash` is computed on the
+  unredacted request, so M7's cassette matching compares like with like; it is a one-way hash.
+- M2: OpenAI normalization joins system/developer messages into `system` (their position is
+  lost), merges consecutive same-role messages, and uses `max_tokens = 4096` when the request sets
+  no limit, recording the original parameter name in `extra["max_tokens_param"]`.
+- M2: a tool call depends on the LLM call whose `tool_use` block requested it (matched by name and
+  arguments, most recent first). The spec only defines LLM → tool links; this is the reverse edge.
+  Its `tool_use_id` is stored in `tags["tool_use_id"]`, and `tags["side_effects"]` records the flag.
+- M2: the active run is found through a context variable, then a process-wide stack of active
+  runs (so calls from worker threads still land in the run), then an implicit run named from
+  `AGENTRELAY_RUN_NAME` or the script name, finished at exit with status `unknown`.
+- M2: `relay.run()` returns its recorder (`set_output()`, `label()`, `id`). `@relay.entrypoint`
+  records `module:qualname` (resolving `__main__` for `python -m`) and, if the run set no output,
+  stores the return value as `{"return": value}`.
+- M2: `relay record` reports new runs by comparing run ids on disk before and after the command,
+  and exits with the command's exit code. It names runs after the module or script, skipping
+  generic names like `agent` or `main`.
+- M2: in examples, `run.input` holds all of `main()`'s arguments, so M7 can call
+  `entrypoint(**run.input)`. Each example has `--fixed` for its documented fix.
+- M2: FakeLLM rules match substrings anywhere in the context, case-insensitively, so rule marker
+  strings must not appear in prompts or tool specs. Two such collisions in the examples were found
+  and fixed while building M2; `test_examples_reproduce_their_bug_and_the_fix_removes_it` now
+  checks every example's bug and fix rates.
+
 ## Known gaps
-- `providers/pricing.py` and the real Anthropic/OpenAI providers are not written yet. M1 only
-  needs FakeLLM; they come with the SDK wrappers (M2) and the budget logic (M3).
+- `providers/pricing.py` and the real Anthropic/OpenAI providers (sending normalized requests)
+  arrive in M3 with the budget logic. Until then recorded `cost_usd` is `None` for real models.
+- The examples' `oracles.py` files arrive in M3, which adds the oracle API they use.
+- Not intercepted: Anthropic `messages.stream()` helper, `messages.batches`, beta namespaces, and
+  OpenAI `responses.stream()` / `chat.completions.parse()`. Only the methods the spec names are.
+- A stream abandoned without being exhausted, closed, or exited is never recorded.
