@@ -113,3 +113,21 @@ def test_fake_tokens_and_costs() -> None:
 def test_rule_probability_is_validated() -> None:
     with pytest.raises(ValueError):
         Rule(respond=text("x"), probability=1.5)
+
+
+def test_turn_limits() -> None:
+    first_only = Rule(when_all=["clean"], respond=text("first"), max_turn=0)
+    later = Rule(when_all=["clean"], respond=text("later"), min_turn=1)
+    llm = FakeLLM(rules=[first_only, later], default=text("none"))
+    turn0 = req("clean", system=None)
+    turn1 = turn0.model_copy(
+        update={
+            "messages": [
+                *turn0.messages,
+                Message(role="assistant", content=[text_block("ok")]),
+                Message(role="user", content=[text_block("clean again")]),
+            ]
+        }
+    )
+    assert llm.complete_sync(turn0).text() == "first"
+    assert llm.complete_sync(turn1).text() == "later"

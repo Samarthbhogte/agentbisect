@@ -4,7 +4,8 @@ Two modes:
 
 * **Scripted:** returns a fixed list of responses in order.
 * **Rules:** stochastic trigger rules. A rule fires when every ``when_all`` substring is in the
-  rendered context, no ``unless_any`` substring is, and a seeded coin flip with
+  rendered context, no ``unless_any`` substring is, the conversation turn (the number of
+  assistant messages so far) is within ``min_turn``..``max_turn``, and a seeded coin flip with
   ``probability`` comes up. The first rule that fires wins; otherwise the default response is
   returned. Matching is case-insensitive.
 
@@ -43,9 +44,13 @@ class Rule(BaseModel):
     respond: LLMResponse
     probability: float = Field(default=1.0, ge=0.0, le=1.0)
     name: str | None = None
+    min_turn: int = 0
+    max_turn: int | None = None
 
-    def matches(self, context: str) -> bool:
-        """``context`` must already be lower-cased."""
+    def matches(self, context: str, turn: int = 0) -> bool:
+        """``context`` must already be lower-cased; ``turn`` = assistant messages so far."""
+        if turn < self.min_turn or (self.max_turn is not None and turn > self.max_turn):
+            return False
         if not all(s.lower() in context for s in self.when_all):
             return False
         return not any(s.lower() in context for s in self.unless_any)
@@ -92,8 +97,9 @@ class FakeLLM:
         """Pick a response by rules. Pure: does not count as a call."""
         rng = rng_for(req, seed)
         context = render_context(req).lower()
+        turn = sum(1 for m in req.messages if m.role == "assistant")
         for rule in self.rules:
-            if rule.matches(context) and rng.random() < rule.probability:
+            if rule.matches(context, turn) and rng.random() < rule.probability:
                 return rule.respond
         return self.default
 

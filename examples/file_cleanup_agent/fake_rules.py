@@ -24,6 +24,7 @@ RULES = [
         name="read-readme",
         when_all=["clean up"],
         unless_any=["# Acme Project"],
+        max_turn=0,  # only as the first step
         respond=tool_use("read_file", {"path": f"{PROJECT}/README.md"}),
     ),
     Rule(

@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgentRelay report — {{ r.step_id }}</title>
+<style>
+:root {
+  --bg: #ffffff; --fg: #1d2330; --muted: #5d6677; --line: #e3e6ec; --card: #f6f7f9;
+  --accent: #3b5bdb; --bad: #c92a2a; --good: #2b8a3e; --warn: #b7791f; --mark: #ffe8a3;
+  --bar-base: #495057; --bar-min: #3b5bdb; --bar-abl: #868e96; --bar-cf: #2b8a3e;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12151b; --fg: #e6e9ef; --muted: #9aa3b2; --line: #2a303b; --card: #1a1e26;
+    --accent: #748ffc; --bad: #ff6b6b; --good: #69db7c; --warn: #fcc419; --mark: #5c4a12;
+    --bar-base: #adb5bd; --bar-min: #748ffc; --bar-abl: #6c7480; --bar-cf: #69db7c;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg);
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 980px; margin: 0 auto; padding: 24px 16px 64px; }
+h1 { font-size: 22px; margin: 0 0 4px; }
+h2 { font-size: 17px; margin: 36px 0 12px; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+.meta { color: var(--muted); font-size: 13px; }
+code, pre, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 16px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+.card .k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+.card .v { font-size: 20px; font-weight: 600; margin-top: 2px; }
+.card .s { color: var(--muted); font-size: 12px; }
+.status { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+.status.ok { background: var(--good); color: var(--bg); }
+.status.other { background: var(--warn); color: var(--bg); }
+.notice { border-left: 3px solid var(--warn); padding: 6px 12px; background: var(--card); margin: 12px 0; }
+.table-wrap { width: 100%; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; }
+.culprit { color: var(--bad); font-weight: 700; }
+.snippet { color: var(--muted); font-size: 13px; }
+.chart { width: 100%; overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 560px; }
+.chart text { fill: var(--fg); font-size: 12px; }
+.chart .axis { stroke: var(--line); }
+.chart .tick { fill: var(--muted); font-size: 11px; }
+.b-baseline { fill: var(--bar-base); } .b-minimal { fill: var(--bar-min); }
+.b-ablation { fill: var(--bar-abl); } .b-culprit { fill: var(--bad); } .b-counterfactual { fill: var(--bar-cf); }
+.ci { stroke: var(--fg); stroke-width: 1.5; }
+.chat { display: flex; flex-direction: column; gap: 10px; }
+.msg { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--card); }
+.msg .role { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
+.msg.assistant { margin-left: 32px; }
+.block { white-space: pre-wrap; word-break: break-word; margin: 4px 0; }
+.block.tool { border-left: 3px solid var(--accent); padding-left: 8px; }
+mark { background: var(--mark); color: inherit; padding: 0 2px; border-radius: 2px; }
+.yes { color: var(--bad); } .no { color: var(--muted); }
+footer { margin-top: 48px; color: var(--muted); font-size: 12px; }
+@media (max-width: 600px) { .msg.assistant { margin-left: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<h1>Why step {{ r.step_id }} failed</h1>
+<div class="meta">Run <code>{{ r.run_id }}</code> · model <code>{{ r.model }}</code> · oracle
+  <code>{{ r.oracle }}</code> · fingerprint <code>{{ r.fingerprint }}</code></div>
+{% if r.oracle_noisy %}<div class="notice">This oracle is an LLM judge, so its verdicts are noisier than a rule-based oracle.</div>{% endif %}
+
+<section>
+<div class="cards">
+  <div class="card"><div class="k">Status</div><div class="v">
+    <span class="status {{ 'ok' if r.status == 'ok' else 'other' }}">{{ r.status }}</span></div>
+    <div class="s">{{ r.message }}</div></div>
+  <div class="card"><div class="k">Baseline failure rate</div><div class="v">{{ pct(r.baseline.p_hat) }}</div>
+    <div class="s">95% CI {{ pct(r.baseline.ci_low) }}–{{ pct(r.baseline.ci_high) }}, n={{ r.baseline.trials }}</div></div>
+  <div class="card"><div class="k">Minimal repro</div><div class="v">{{ s.minimal_ids|length }} of {{ s.units|length }} units</div>
+    <div class="s">{{ "{:,}".format(s.minimal_tokens) }} of {{ "{:,}".format(s.original_tokens) }} tokens</div></div>
+  {% if r.minimal_estimate %}<div class="card"><div class="k">Minimal failure rate</div><div class="v">{{ pct(r.minimal_estimate.p_hat) }}</div>
+    <div class="s">95% CI {{ pct(r.minimal_estimate.ci_low) }}–{{ pct(r.minimal_estimate.ci_high) }}, n={{ r.minimal_estimate.trials }}</div></div>{% endif %}
+  <div class="card"><div class="k">Culprits</div><div class="v">{{ r.culprits|length }}</div>
+    <div class="s">{% for c in r.culprits %}<code>{{ c.unit_id }}</code> {% endfor %}</div></div>
+</div>
+{% for i in r.interactions %}<div class="notice"><strong>Interaction ({{ i.kind }}):</strong> {{ i.message }}</div>{% endfor %}
+</section>
+
+<h2>Failure rate</h2>
+<div class="chart">
+<svg viewBox="0 0 720 {{ chart_height }}" role="img" aria-label="Failure rates with 95% confidence intervals">
+  {% for t in [0, 25, 50, 75, 100] %}
+  <line class="axis" x1="{{ 230 + t * 4.6 }}" y1="12" x2="{{ 230 + t * 4.6 }}" y2="{{ chart_height - 18 }}"/>
+  <text class="tick" x="{{ 230 + t * 4.6 }}" y="{{ chart_height - 4 }}" text-anchor="middle">{{ t }}%</text>
+  {% endfor %}
+  {% for b in bars %}
+  <text x="0" y="{{ b.y + 14 }}"><tspan>{{ b.label }}</tspan></text>
+  <text class="tick" x="0" y="{{ b.y + 27 }}">{{ b.note }}</text>
+  <rect class="b-{{ b.kind }}" x="230" y="{{ b.y + 3 }}" width="{{ b.x * 4.6 }}" height="18" rx="2"/>
+  <line class="ci" x1="{{ 230 + b.lo * 4.6 }}" y1="{{ b.y + 12 }}" x2="{{ 230 + b.hi * 4.6 }}" y2="{{ b.y + 12 }}"/>
+  <line class="ci" x1="{{ 230 + b.lo * 4.6 }}" y1="{{ b.y + 6 }}" x2="{{ 230 + b.lo * 4.6 }}" y2="{{ b.y + 18 }}"/>
+  <line class="ci" x1="{{ 230 + b.hi * 4.6 }}" y1="{{ b.y + 6 }}" x2="{{ 230 + b.hi * 4.6 }}" y2="{{ b.y + 18 }}"/>
+  <text x="{{ 230 + b.hi * 4.6 + 6 }}" y="{{ b.y + 16 }}">{{ "%.0f"|format(b.x) }}%</text>
+  {% endfor %}
+</svg>
+</div>
+
+<h2>Attribution</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Rank</th><th>Unit</th><th>Removed from original</th><th>Attribution</th><th>Neutral rewrite</th></tr></thead>
+<tbody>
+{% for a in r.attributions %}
+<tr>
+  <td>{{ a.rank }}</td>
+  <td><code>{{ a.unit_id }}</code> {% if a.culprit %}<span class="culprit">CULPRIT</span>{% endif %}
+    <div class="snippet">{{ (a.counterfactual.removed if a.counterfactual and a.counterfactual.removed else a.text)|truncate(220) }}</div></td>
+  <td class="mono">{{ pct(r.baseline.p_hat) }} → {{ pct(a.without_full.p_hat) }}
+    <div class="snippet">CI {{ pct(a.without_full.ci_low) }}–{{ pct(a.without_full.ci_high) }}, n={{ a.without_full.trials }}</div></td>
+  <td class="mono">{{ "%+.0f"|format(100 * a.attribution) }} pts
+    <div class="snippet">[{{ "%+.0f"|format(100 * a.attribution_low) }}, {{ "%+.0f"|format(100 * a.attribution_high) }}]</div></td>
+  <td>{% if a.counterfactual %}{% if a.counterfactual.estimate %}<span class="mono">{{ pct(a.counterfactual.estimate.p_hat) }}</span>{% else %}—{% endif %}
+    <div class="snippet">{{ a.counterfactual.source }}: {{ a.counterfactual.note }}</div>{% else %}<span class="no">n/a</span>{% endif %}</td>
+</tr>
+{% endfor %}
+{% for label in r.not_removable %}
+<tr><td></td><td><code>{{ label }}</code></td><td class="no" colspan="3">not removable</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+<h2>Minimal context</h2>
+<p class="meta">The smallest context that still fails. Culprit text is highlighted.</p>
+<div class="chat">
+{% if transcript.system %}<div class="msg"><div class="role">system</div><div class="block">{{ transcript.system }}</div></div>{% endif %}
+{% if transcript.tools %}<div class="msg"><div class="role">tools</div>
+  {% for t in transcript.tools %}<div class="block"><code>{{ t.name }}</code>: {{ t.description }}</div>{% endfor %}</div>{% endif %}
+{% for m in transcript.messages %}
+<div class="msg {{ m.role }}"><div class="role">{{ m.role }}</div>
+  {% for b in m.blocks %}
+    {% if b.kind == "tool_use" %}<div class="block tool">→ <code>{{ b.name }}</code> {{ b.body }}</div>
+    {% elif b.kind == "tool_result" %}<div class="block tool">{{ b.body }}</div>
+    {% else %}<div class="block">{{ b.body }}</div>{% endif %}
+  {% endfor %}
+</div>
+{% endfor %}
+</div>
+
+{% if bisect %}<h2>First bad step</h2>{% endif %}
+
+<h2>Shrink log</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>#</th><th>Level</th><th>Test</th><th>Items kept</th><th>Tokens</th><th>Still fails</th></tr></thead>
+<tbody>
+{% for step in s.log %}
+<tr><td>{{ loop.index }}</td><td>{{ step.level }}</td><td>{{ step.test }}{% if step.cached %} <span class="no">(repeat)</span>{% endif %}</td>
+  <td>{{ step.candidate_items }}</td><td>{{ step.candidate_tokens }}</td>
+  <td class="{{ 'yes' if step.fails else 'no' }}">{{ 'yes' if step.fails else 'no' }}</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+<h2>Cost</h2>
+<table>
+<tbody>
+<tr><td>Trials</td><td class="mono">{{ r.trials }} ({{ r.cached_trials }} from cache)</td></tr>
+<tr><td>Provider calls</td><td class="mono">{{ r.provider_calls }}</td></tr>
+<tr><td>Cost</td><td class="mono">${{ "%.4f"|format(r.cost_usd) }}</td></tr>
+{% if r.elapsed_s is not none %}<tr><td>Time</td><td class="mono">{{ "%.1f"|format(r.elapsed_s) }} s</td></tr>{% endif %}
+</tbody>
+</table>
+
+<footer>Generated by AgentRelay {{ version }} on {{ generated }}. This page is self-contained and makes no network requests.</footer>
+</main>
+</body>
+</html>

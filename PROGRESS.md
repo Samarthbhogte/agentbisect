@@ -52,10 +52,15 @@ criterion passes.
 - Coverage: context 98%, algo/stats/replay 92–100% (98% combined).
 
 ## M5 — Explain and reports
-- [ ] `algo/explain.py`, interactions, terminal + HTML report, `--json`
-- [ ] Accept: ground-truth culprit ranks first on all three examples
-- [ ] Accept: two-culprit case reports the right interaction
-- [ ] Accept: `report.html` makes no network requests
+- [x] `algo/explain.py`, interactions, terminal + HTML report, `--json`, `relay explain`
+- [x] Accept: ground-truth culprit ranks first on all three examples, as the only culprit:
+  file_cleanup injected chunk (+90 pts), refund stale-policy chunk (+95 pts), calendar
+  `create_event` description (+90 pts)
+- [x] Accept: two-culprit case reports an "and" interaction between exactly `sys.0` and
+  `msg.2.tr.0`; a redundant-cause case reports an "or" interaction for the right pair
+- [x] Accept: `report.html` makes no network requests (no scripts at all, no external URLs;
+  hostile content is escaped). Checked visually in a browser in dark, light and phone widths.
+- Coverage: algo 94–100%, context 98–100%, report 92–99% (97% combined).
 
 ## M6 — Test emitter and CI
 - [ ] `emit/`, `run_scenario`, current-prompt override, `relay ci`, GitHub Action
@@ -203,6 +208,32 @@ criterion passes.
   not_failing 4. A partial result carries the smallest failing candidate found so far.
   `--trials` sets the baseline trial count. The recorded response must fail the oracle, unless
   `--fingerprint` names the failure to look for.
+- M5: FakeLLM rules gained `min_turn`/`max_turn` (turn = assistant messages so far). The example
+  rules for earlier agent stages (read the README, look up the order, read the profile) re-fired
+  whenever their trigger text was removed, which made that supporting context look exactly as
+  necessary as the planted culprit. Gating them by turn models agent stages and leaves each
+  example with one true culprit. Seeds and bug rates did not change. General caveat, stated in
+  reports: necessity is not blame; with a real model, supporting context can be as necessary as
+  the culprit, and explain reports that as an "and" interaction.
+- M5: explain works at the finest level: a tool result whose chunks are in the minimal set is
+  explained through its chunks. Removing a unit also removes its group mates and children.
+- M5: attribution interval = Newcombe's hybrid score interval for p0 − p(Full without u), built
+  from the two Wilson intervals. Culprit = the Wilson intervals do not overlap
+  (`ci_high(without) < ci_low(p0)`). Every measurement runs a fixed number of trials (baseline 20,
+  everything else 16) with no early stopping, so all intervals are comparable.
+- M5: interactions come in two kinds. "and": two or more culprits, each necessary (the planted
+  two-culprit case). "or": no single culprit, and a pair within M (|M| ≤ 6) whose joint removal
+  fixes the failure; this is the spec's pair test. Ranking: culprits first, then attribution.
+- M5: counterfactual substitution uses `--substitute UNIT=FILE` first, then an LLM rewrite with a
+  real provider ("generated", cached through the trial cache), else a heuristic rewrite that
+  drops comments and sentences with injection cues ("heuristic", used with FakeLLM). If the
+  rewrite is identical, no trials run and the report says the failure comes from the facts.
+  Counterfactuals are reported but do not change the ranking.
+- M5: `relay explain` reuses `shrink-<step>.json` when its fingerprint and removal mode match,
+  otherwise it shrinks first. Artifacts: `explain-<step>.json`, and with `--html`,
+  `report.html` (one per run: the latest explain wins). Exit codes match shrink (no_culprit 0).
+- M5: the HTML report has no JavaScript; the chart is server-rendered inline SVG. Text is escaped
+  by Jinja autoescape, and culprit text is highlighted after escaping.
 
 ## Known gaps
 - No real model prices are built in (see Decisions); set them in `agentrelay.toml`. Recorded

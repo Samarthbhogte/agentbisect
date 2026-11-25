@@ -495,6 +495,84 @@ def _show_shrink(
     )
 
 
+# ---- explain ------------------------------------------------------------------------------
+EXPLAIN_EXIT = {"ok": 0, "no_culprit": 0, "partial": 3, "too_rare": 4, "not_failing": 4}
+
+
+@app.command("explain")
+def explain_decision(
+    run_ref: Annotated[
+        str, typer.Argument(metavar="RUN", help="Run id, unique prefix, or 'last'.")
+    ],
+    step: Annotated[str, typer.Option(help="s0023, 23, or auto (first failing LLM call).")],
+    oracle: Annotated[str, typer.Option(help="FILE.py:NAME, MODULE:NAME, or a configured name.")],
+    trials: Annotated[int, typer.Option(min=4, help="Trials per ablation.")] = 16,
+    substitute: Annotated[
+        list[str] | None,
+        typer.Option(help="UNIT=FILE: use FILE as the neutral version of UNIT (repeatable)."),
+    ] = None,
+    html: Annotated[
+        bool, typer.Option("--html", help="Also write a self-contained report.html.")
+    ] = False,
+    fingerprint: Annotated[
+        str | None, typer.Option(help="Failure to explain (default: the recorded one).")
+    ] = None,
+    removal: Annotated[
+        str, typer.Option(help="placeholder or delete (as in shrink).")
+    ] = "placeholder",
+    provider: ProviderOpt = None,
+    fake_rules: FakeRulesOpt = None,
+    max_cost: MaxCostOpt = 2.0,
+    concurrency: ConcurrencyOpt = 4,
+    as_json: JsonFlag = False,
+) -> None:
+    """Rank the units of the minimal context by how much each one causes the failure."""
+    from agentrelay.cli_explain import run_explain
+    from agentrelay.cli_try import ProviderOptions, TryError
+    from agentrelay.oracles.api import OracleError
+    from agentrelay.providers.registry import ProviderSetupError
+    from agentrelay.report.terminal import render_explain
+
+    if removal not in ("placeholder", "delete"):
+        err.print("[red]error:[/red] --removal must be placeholder or delete")
+        raise typer.Exit(2)
+    try:
+        result, path, report = run_explain(
+            run_ref,
+            step_ref=step,
+            oracle_ref=oracle,
+            fingerprint=fingerprint,
+            trials=trials,
+            removal=removal,  # type: ignore[arg-type]
+            substitutes=substitute or [],
+            html=html,
+            opts=ProviderOptions(
+                provider=provider, fake_rules=fake_rules, max_cost=max_cost, concurrency=concurrency
+            ),
+        )
+    except (RunNotFound, AmbiguousRunRef) as exc:
+        err.print(f"[red]error:[/red] {escape(str(exc.args[0]))}")
+        raise typer.Exit(1) from exc
+    except OracleError as exc:
+        err.print(f"[red]oracle error:[/red] {escape(str(exc))}")
+        raise typer.Exit(2) from exc
+    except (TryError, ProviderSetupError) as exc:
+        err.print(f"[red]error:[/red] {escape(str(exc))}")
+        raise typer.Exit(2) from exc
+    if as_json:
+        _print_json(result.model_dump(mode="json"))
+    else:
+        render_explain(
+            result,
+            console,
+            next_hint=f"relay emit-test {(result.run_id or '')[:10]} --step {result.step_id}",
+        )
+        console.print(f"Saved: {escape(str(path))}")
+        if report is not None:
+            console.print(f"Report: {escape(str(report))}")
+    raise typer.Exit(EXPLAIN_EXIT[result.status])
+
+
 # ---- doctor -------------------------------------------------------------------------------
 @app.command()
 def doctor() -> None:

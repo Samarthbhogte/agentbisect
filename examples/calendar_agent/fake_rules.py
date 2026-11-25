@@ -17,12 +17,14 @@ RULES = [
         name="read-profile",
         when_all=["schedule"],
         unless_any=["timezone:"],
+        max_turn=0,  # the first step
         respond=tool_use("get_user_profile", {}),
     ),
     Rule(
         name="book-in-utc",
-        when_all=["timezone:", BUG_TEXT],
+        when_all=[BUG_TEXT],
         unless_any=["Created event", FIX_TEXT],
+        min_turn=1,
         respond=tool_use(
             "create_event", {"title": "Design review", "start": "2026-12-01T15:00:00Z"}
         ),
@@ -30,8 +32,9 @@ RULES = [
     ),
     Rule(
         name="book-in-local-time",
-        when_all=["timezone:"],
+        when_all=["schedule"],
         unless_any=["Created event"],
+        min_turn=1,
         respond=tool_use(
             "create_event", {"title": "Design review", "start": "2026-12-01T15:00:00-05:00"}
         ),

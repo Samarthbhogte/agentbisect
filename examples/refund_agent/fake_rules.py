@@ -28,12 +28,15 @@ RULES = [
         name="look-up-order",
         when_all=["refund"],
         unless_any=["Order #A1001"],
+        max_turn=0,  # the first step
         respond=tool_use("get_order", {"order_id": "A1001"}),
     ),
     Rule(
         name="search-current-policy",
         when_all=["Order #A1001"],
         unless_any=[SEARCHED],
+        min_turn=1,
+        max_turn=1,  # the second step, after the order lookup
         respond=tool_use("search_policy", {"query": "current refund policy"}),
         probability=0.8,
     ),
@@ -41,6 +44,8 @@ RULES = [
         name="search-refund-window",
         when_all=["Order #A1001"],
         unless_any=[SEARCHED],
+        min_turn=1,
+        max_turn=1,
         respond=tool_use("search_policy", {"query": "refund window"}),
     ),
     Rule(

@@ -314,3 +314,43 @@ def total_tokens(units: list[ContextUnit], ids: Iterable[str] | None = None) -> 
     chosen = set(ids) if ids is not None else {u.id for u in units}
     chunked = {u.parent for u in units if u.parent}
     return sum(u.tokens for u in units if u.id in chosen and u.id not in chunked)
+
+
+# ---- full text and substitution -----------------------------------------------------------
+def _locate(req: LLMRequest, unit_id: str) -> tuple[int, int, int | None]:
+    """(message index, block index, chunk index or None) for a tool result or chunk id."""
+    parts = unit_id.split(".")
+    if len(parts) < 4 or parts[0] != "msg" or parts[2] != "tr":
+        raise KeyError(f"{unit_id} is not a tool result or chunk")
+    i, k = int(parts[1]), int(parts[3])
+    chunk = int(parts[5]) if len(parts) == 6 and parts[4] == "chunk" else None
+    results = [b for b, block in enumerate(req.messages[i].content) if block.type == "tool_result"]
+    return i, results[k], chunk
+
+
+def unit_text(req: LLMRequest, unit: ContextUnit) -> str:
+    """The unit's full text (`ContextUnit.text` is only a 300-character preview)."""
+    if unit.kind == "system_section":
+        return split_sections(req.system or "")[int(unit.id.split(".")[1])]
+    if unit.kind == "tool_spec":
+        name = unit.id.split(".", 1)[1]
+        return next(t.description for t in req.tools if t.name == name)
+    if unit.kind == "message":
+        return _message_text(req.messages[int(unit.id.split(".")[1])])
+    i, b, chunk = _locate(req, unit.id)
+    text = req.messages[i].content[b].text or ""
+    return text if chunk is None else split_chunks(text)[chunk]
+
+
+def substitute(req: LLMRequest, unit_id: str, new_text: str) -> LLMRequest:
+    """The request with one tool result or chunk replaced by `new_text` (everything else kept)."""
+    i, b, chunk = _locate(req, unit_id)
+    out = req.model_copy(deep=True)
+    block = out.messages[i].content[b]
+    if chunk is None:
+        out.messages[i].content[b] = block.model_copy(update={"text": new_text, "raw": None})
+    else:
+        pieces = split_chunks(block.text or "")
+        pieces[chunk] = new_text
+        out.messages[i].content[b] = block.model_copy(update={"text": "".join(pieces)})
+    return out
