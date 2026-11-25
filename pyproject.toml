@@ -51,6 +51,7 @@ files = ["src/agentrelay"]
 mypy_path = "src"
 warn_unused_configs = false
 ignore_missing_imports = true
+plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
 module = [
