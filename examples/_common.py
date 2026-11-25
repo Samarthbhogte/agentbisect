@@ -11,7 +11,9 @@ import agentrelay as relay
 from agentrelay.providers.base import LLMResponse
 from agentrelay.providers.fake import FakeLLM, Rule
 
-DEFAULT_MODEL = os.environ.get("AGENTRELAY_MODEL", "fake-model")
+# The model id comes from --model or AGENTRELAY_MODEL. With --provider fake any name works.
+PLACEHOLDER_MODEL = "fake-model"
+DEFAULT_MODEL = os.environ.get("AGENTRELAY_MODEL", PLACEHOLDER_MODEL)
 MAX_TURNS = 8
 
 
@@ -74,6 +76,11 @@ def cli(main: Callable[..., str], default_task: str, argv: Sequence[str] | None 
     parser.add_argument("--seed", type=int, default=0, help="FakeLLM seed (fake provider only)")
     parser.add_argument("--fixed", action="store_true", help="Use the documented fix")
     args = parser.parse_args(argv)
+    if args.provider != "fake" and args.model == PLACEHOLDER_MODEL:
+        parser.error(
+            "--provider anthropic needs a real model: pass --model <model id> "
+            "or set AGENTRELAY_MODEL"
+        )
     print(
         main(
             task=args.task,

@@ -134,3 +134,15 @@ def test_secrets_never_reach_the_store(
     run = last_run()
     assert "[REDACTED:anthropic_key:" in run.input["task"]
     assert "[REDACTED:github_token:" in run.steps[1].response["result"]  # type: ignore[index]
+
+
+def test_real_provider_needs_an_explicit_model(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from examples._common import cli
+
+    monkeypatch.delenv("AGENTRELAY_MODEL", raising=False)
+    with pytest.raises(SystemExit) as info:
+        cli(cleanup_main, "task", ["--provider", "anthropic"])
+    assert info.value.code == 2
+    assert "needs a real model" in capsys.readouterr().err

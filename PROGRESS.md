@@ -169,6 +169,10 @@ criterion passes.
 - M3: found and fixed a third FakeLLM marker collision (file_cleanup's "Deleted " marker matched
   "what you deleted" in the system prompt, so the safe path never deleted the temp file). The
   example test now also checks the safe path.
+- Examples: no built-in model id. `--model` or
+  `AGENTRELAY_MODEL` sets it, and `--provider anthropic` without one is a clear usage error.
+  Tests use `fake-model`. (Changing the model name changes FakeLLM's seeded draws, so the
+  documented failing seeds are now 2 for file_cleanup, 7 for refund, and 1 for calendar.)
 
 ## Known gaps
 - No real model prices are built in (see Decisions); set them in `agentrelay.toml`. Recorded

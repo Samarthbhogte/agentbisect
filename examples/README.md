@@ -11,4 +11,6 @@ and each runs fully offline with `--provider fake`, which answers through FakeLL
 | [`calendar_agent`](calendar_agent/README.md) | Books meetings in UTC | The `create_event` tool description |
 
 Every example takes `--seed N` (which FakeLLM sample to draw) and `--fixed` (apply the documented
-fix). Use `--provider anthropic` with `ANTHROPIC_API_KEY` set to run against a real model.
+fix). To run against a real model, use `--provider anthropic` with `ANTHROPIC_API_KEY` set and
+pick the model with `--model <model id>` or the `AGENTRELAY_MODEL` environment variable. With
+`--provider fake` the model name doesn't matter.
