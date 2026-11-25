@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import random
 from collections.abc import Sequence
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -100,8 +101,27 @@ class FakeLLM:
         tokens_in = _approx_tokens(render_context(req))
         return self._price(tokens_in, req.max_tokens)
 
-    def cost(self, resp: LLMResponse) -> float:
+    def cost(self, resp: LLMResponse, req: LLMRequest | None = None) -> float:
         return self._price(resp.tokens_in or 0, resp.tokens_out or 0)
+
+    @property
+    def cache_namespace(self) -> str:
+        """Identifies this rule set, so cached answers from different rules never mix."""
+        if self._script is not None:
+            return "fake:script:" + sha256_hex(canonical_json([r.to_dict() for r in self._script]))
+        rules = [r.model_dump(mode="json") for r in self.rules]
+        return "fake:" + sha256_hex(canonical_json([rules, self.default.to_dict()]))
+
+    @classmethod
+    def from_rules_file(cls, ref: str, **kwargs: Any) -> FakeLLM:
+        """Load `RULES` (and optional `DEFAULT`) from a Python file such as `fake_rules.py`."""
+        from agentrelay._loader import load_module
+
+        module = load_module(ref)
+        rules = getattr(module, "RULES", None)
+        if rules is None:
+            raise AttributeError(f"{ref} must define RULES (a list of Rule)")
+        return cls(rules=rules, default=getattr(module, "DEFAULT", None), **kwargs)
 
     def _next_scripted(self) -> LLMResponse:
         assert self._script is not None

@@ -17,9 +17,10 @@ from __future__ import annotations
 
 __version__ = "0.1.0"
 
+from agentrelay.oracles.api import oracle
 from agentrelay.schema import Failure
 from agentrelay.sdk.context import entrypoint, run
 from agentrelay.sdk.tools import tool
 from agentrelay.sdk.wrap import wrap
 
-__all__ = ["Failure", "__version__", "entrypoint", "run", "tool", "wrap"]
+__all__ = ["Failure", "__version__", "entrypoint", "oracle", "run", "tool", "wrap"]

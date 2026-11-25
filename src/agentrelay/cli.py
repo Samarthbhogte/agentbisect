@@ -265,6 +265,117 @@ def _show_step(step: Step) -> None:
     console.print_json(json.dumps(step.response, ensure_ascii=False))
 
 
+# ---- try ----------------------------------------------------------------------------------
+ProviderOpt = Annotated[
+    str | None, typer.Option("--provider", help="anthropic, openai or fake (default: as recorded).")
+]
+FakeRulesOpt = Annotated[
+    str | None, typer.Option("--fake-rules", help="FakeLLM rules file (with --provider fake).")
+]
+MaxCostOpt = Annotated[float, typer.Option("--max-cost", help="Stop before spending more (USD).")]
+ConcurrencyOpt = Annotated[int, typer.Option("--concurrency", help="Parallel provider calls.")]
+
+
+def _pct(x: float) -> str:
+    return f"{100 * x:.0f}%"
+
+
+def _rate_line(est: Any) -> str:
+    return (
+        f"{_pct(est.p_hat)}  [{_pct(est.ci_low)}–{_pct(est.ci_high)}]  "
+        f"({est.failures}/{est.trials})"
+    )
+
+
+@app.command("try")
+def try_decision(
+    run_ref: Annotated[
+        str, typer.Argument(metavar="RUN", help="Run id, unique prefix, or 'last'.")
+    ],
+    step: Annotated[str, typer.Option(help="s0023, 23, or auto (first failing LLM call).")],
+    oracle: Annotated[
+        str | None, typer.Option(help="FILE.py:NAME, MODULE:NAME, or a name from agentrelay.toml.")
+    ] = None,
+    trials: Annotated[int, typer.Option(min=1, help="How many times to re-run the decision.")] = 10,
+    fingerprint: Annotated[
+        str | None, typer.Option(help="Failure to count (default: the recorded one, else any).")
+    ] = None,
+    model: Annotated[str | None, typer.Option(help="Re-run on a different model.")] = None,
+    temperature: Annotated[float | None, typer.Option(help="Override the temperature.")] = None,
+    provider: ProviderOpt = None,
+    fake_rules: FakeRulesOpt = None,
+    max_cost: MaxCostOpt = 2.0,
+    concurrency: ConcurrencyOpt = 4,
+    as_json: JsonFlag = False,
+) -> None:
+    """Re-run one recorded decision N times and show its failure rate."""
+    from agentrelay.cli_try import ProviderOptions, TryError, run_try
+    from agentrelay.oracles.api import OracleError
+    from agentrelay.providers.registry import ProviderSetupError
+    from agentrelay.replay.decision import RequestOverrides
+
+    try:
+        result = run_try(
+            run_ref,
+            step_ref=step,
+            oracle_ref=oracle,
+            fingerprint=fingerprint,
+            trials=trials,
+            overrides=RequestOverrides(model=model, temperature=temperature),
+            opts=ProviderOptions(
+                provider=provider, fake_rules=fake_rules, max_cost=max_cost, concurrency=concurrency
+            ),
+        )
+    except (RunNotFound, AmbiguousRunRef) as exc:
+        err.print(f"[red]error:[/red] {escape(str(exc.args[0]))}")
+        raise typer.Exit(1) from exc
+    except OracleError as exc:
+        err.print(f"[red]oracle error:[/red] {escape(str(exc))}")
+        raise typer.Exit(2) from exc
+    except (TryError, ProviderSetupError) as exc:
+        err.print(f"[red]error:[/red] {escape(str(exc))}")
+        raise typer.Exit(2) from exc
+    if as_json:
+        _print_json(result.to_json())
+    else:
+        _show_try(result)
+    if result.estimate.partial:
+        raise typer.Exit(3)
+
+
+def _show_try(r: Any) -> None:
+    est, stats = r.estimate, r.stats
+    console.print(
+        f"[bold]AgentRelay try[/bold] — run {r.run.id[:10]}… step {r.step.id} "
+        f"({escape(r.request.model)})"
+    )
+    if r.oracle:
+        noisy = "  [yellow](LLM judge: noisier)[/yellow]" if r.oracle.noisy else ""
+        console.print(
+            f"Oracle: {escape(r.oracle.name)}   fingerprint: {escape(r.fingerprint)}" + noisy
+        )
+        recorded = r.recorded_failure.fingerprint if r.recorded_failure else "passed"
+        console.print(f"Recorded response: {escape(recorded)}")
+        console.print(f"\nFailure rate   [bold]{_rate_line(est)}[/bold]")
+        if est.slippage:
+            other = ", ".join(f"{k} ×{v}" for k, v in sorted(est.slippage.items()))
+            console.print(f"Slippage       {escape(other)}  (other failures, not counted)")
+    else:
+        console.print("No oracle given: showing the response distribution only.")
+    table = Table(box=None, header_style="bold", title_justify="left")
+    table.add_column("count", justify="right")
+    table.add_column("response")
+    for summary, n in r.responses.most_common(8):
+        table.add_row(str(n), escape(summary))
+    console.print(table)
+    if est.partial and est.note:
+        console.print(f"[yellow]Partial result:[/yellow] {escape(est.note)}")
+    console.print(
+        f"Spent: {stats.trials} trials ({stats.cache_hits} cached), "
+        f"{stats.provider_calls} provider calls, ${stats.cost_usd:.4f}"
+    )
+
+
 # ---- doctor -------------------------------------------------------------------------------
 @app.command()
 def doctor() -> None:

@@ -236,3 +236,64 @@ class StreamAggregator:
         for index in list(self._json_parts):
             self._close_block(index)
         return self.message
+
+
+# ---- provider -----------------------------------------------------------------------------
+class AnthropicProvider:
+    """Sends normalized requests to the Anthropic Messages API (async client)."""
+
+    name = PROVIDER
+
+    def __init__(
+        self, client: Any = None, *, prices: dict[str, tuple[float, float]] | None = None
+    ) -> None:
+        self._client = client
+        self._prices = prices or {}
+
+    @property
+    def client(self) -> Any:
+        if self._client is None:
+            import anthropic
+
+            self._client = anthropic.AsyncAnthropic(max_retries=0)
+        return self._client
+
+    @property
+    def cache_namespace(self) -> str:
+        return PROVIDER
+
+    async def complete(self, req: LLMRequest, *, seed: int | None = None) -> LLMResponse:
+        try:
+            message = await self.client.messages.create(**request_to_native(req))
+        except Exception as exc:
+            raise _provider_error(exc) from exc
+        return response_from_native(message)
+
+    def price(self, model: str) -> tuple[float, float]:
+        from agentrelay.providers.pricing import price_for
+
+        return price_for(model, self._prices)[0]
+
+    def estimate_cost(self, req: LLMRequest) -> float:
+        from agentrelay.providers.pricing import estimate_cost
+
+        return estimate_cost(req, self.price(req.model))
+
+    def cost(self, resp: LLMResponse, req: LLMRequest) -> float | None:
+        from agentrelay.providers.pricing import response_cost
+
+        return response_cost(resp, self.price(req.model))
+
+
+def _provider_error(exc: Exception) -> Exception:
+    from agentrelay.providers.base import ProviderError
+
+    status = getattr(exc, "status_code", None)
+    name = type(exc).__name__
+    retryable = (isinstance(status, int) and (status == 429 or status >= 500)) or name in (
+        "APIConnectionError",
+        "APITimeoutError",
+    )
+    if status is None and not retryable:
+        return exc
+    return ProviderError(f"{name}: {exc}", retryable=retryable, status_code=status)

@@ -28,12 +28,16 @@ criterion passes.
   21-message, ~17 KB request. Target: < 2 ms.
 
 ## M3 — Decision replay, oracles, statistical engine
-- [ ] `replay/decision.py`, `oracles/`, `stats/`, cache, budget, `relay try`
-- [ ] Accept: Wilson 8/10 → [0.490, 0.943]
-- [ ] Accept: sequential test decides p≈0.95 at threshold 0.5 within 6 trials
-- [ ] Accept: repeated `relay try` makes zero provider calls
-- [ ] Accept: `--max-cost 0.01` stops early with partial result
-- [ ] Accept: other fingerprints counted as slippage
+- [x] `replay/decision.py`, `oracles/`, `stats/`, cache, budget, `relay try`
+- [x] Accept: Wilson 8/10 → [0.490, 0.943] (plus five more reference values and property tests)
+- [x] Accept: sequential test decides p≈0.95 at threshold 0.5 within 6 trials — **as often as the
+  math allows**: 4/4 is the earliest possible decision, and one early pass pushes it past 6
+  (5/6 has CI low 0.44). Expected 0.95⁴ = 81% decided by trial 6; the test checks ≥ 75% over 300
+  requests, a median of 4 trials, and ≥ 90% decided `fails` by trial 8 (expected 95.4%).
+- [x] Accept: repeated `relay try` makes zero provider calls (FakeLLM call counter and runner stats)
+- [x] Accept: `--max-cost 0.01` stops early with a partial result (exit code 3)
+- [x] Accept: other fingerprints counted as slippage
+- Coverage: stats 97–100%, replay 92%, oracles 94–95%, cache 94%.
 
 ## M4 — Context decomposition and shrink
 - [ ] `context/units.py`, `context/constraints.py`, `algo/ddmin.py`, `relay shrink`, artifact
@@ -133,11 +137,45 @@ criterion passes.
   strings must not appear in prompts or tool specs. Two such collisions in the examples were found
   and fixed while building M2; `test_examples_reproduce_their_bug_and_the_fix_removes_it` now
   checks every example's bug and fix rates.
+- M3: `RateEstimate` gained `threshold`, `partial` and `note`, and a `still_fails()` method:
+  `fails`, or `undecided` with `p_hat >= threshold` (the spec's "decide by p_hat at max_trials").
+- M3: Wilson bounds are exactly 0 at k = 0 and exactly 1 at k = n (floating point otherwise gave
+  0.99999…, breaking `p_hat <= ci_high`).
+- M3: the cache key adds a provider namespace to the spec's `sha256(request + model + temperature)`:
+  `anthropic`, `openai`, or a hash of the FakeLLM rule set. Without it, a fake run and a real run
+  of the same request (or two FakeLLM rule sets) would share cached answers.
+- M3: the cache redacts responses before writing and returns the stored copy, so a first run and a
+  cached re-run judge identical text.
+- M3: the budget reserves each trial's estimated cost before calling (so concurrent trials can't
+  overspend) and then settles to the actual cost. Estimates charge the full `max_tokens` of output,
+  so they are upper bounds. The run stops when the *next* trial's estimate would not fit.
+- M3: trials run in batches of `--concurrency` but are judged in index order, so early stopping
+  gives the same answer as running them one at a time (a few extra cached samples may be paid for).
+- M3: retries: an explicit `retryable` flag on the error wins; otherwise HTTP 429 and 5xx are
+  retried, up to 5 times with exponential backoff (0.5 s base) plus jitter. SDK errors are wrapped in
+  `ProviderError`.
+- M3: `providers/pricing.py` only knows FakeLLM's price. Real prices go in `agentrelay.toml`
+  `[prices]`; an unknown model is charged a deliberately high $15 / $75 per Mtok, so a budget can
+  only be exceeded on the safe side. (I did not want to hardcode prices I couldn't verify.)
+- M3: `relay try` runs exactly `--trials` trials (no early stop) and reports the rate and Wilson
+  interval. The target fingerprint is `--fingerprint`, else the one the recorded response fails
+  with, else any failure (`*`). Without `--oracle` it shows the response distribution only.
+  Exit codes: 1 run not found, 2 bad arguments or oracle error, 3 partial result (budget).
+- M3: decision oracles may take `(resp)` or `(resp, req)` and may be `async`. Plain functions
+  loaded with `FILE:NAME` become decision oracles. Files inside a package are imported by dotted
+  name, so relative imports in `fake_rules.py` / `oracles.py` work.
+- M3: `OpenAIProvider` replays through Chat Completions (normalized requests from the Responses API
+  are replayed as chat requests).
+- M3: found and fixed a third FakeLLM marker collision (file_cleanup's "Deleted " marker matched
+  "what you deleted" in the system prompt, so the safe path never deleted the temp file). The
+  example test now also checks the safe path.
 
 ## Known gaps
-- `providers/pricing.py` and the real Anthropic/OpenAI providers (sending normalized requests)
-  arrive in M3 with the budget logic. Until then recorded `cost_usd` is `None` for real models.
-- The examples' `oracles.py` files arrive in M3, which adds the oracle API they use.
+- No real model prices are built in (see Decisions); set them in `agentrelay.toml`. Recorded
+  `cost_usd` on captured steps is still `None`.
+- `judge()` calls are not cached or counted against the budget yet.
+- Live tests against real APIs (`tests/live/`) are not written yet; everything so far is verified
+  offline through the real SDKs with a mocked transport.
 - Not intercepted: Anthropic `messages.stream()` helper, `messages.batches`, beta namespaces, and
   OpenAI `responses.stream()` / `chat.completions.parse()`. Only the methods the spec names are.
 - A stream abandoned without being exhausted, closed, or exited is never recorded.

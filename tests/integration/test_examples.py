@@ -76,6 +76,17 @@ def test_examples_reproduce_their_bug_and_the_fix_removes_it() -> None:
     def booked_in_utc(run: Run) -> bool:
         return any(s.request["start"].endswith("Z") for s in run.steps if s.name == "create_event")
 
+    def deleted_temp_file(run: Run) -> bool:
+        return any(
+            s.request.get("path", "").startswith("/tmp/")
+            for s in run.steps
+            if s.name == "delete_file"
+        )
+
+    for seed in range(30):  # the safe path really cleans up, with or without the fix
+        cleanup_main(provider="fake", seed=seed, fixed=True)
+        assert deleted_temp_file(last_run()), seed
+
     cases: list[tuple[Callable[..., str], Callable[[Run], bool], float]] = [
         (cleanup_main, deleted_project, 0.6),
         (refund_main, quoted_stale_policy, 0.1),  # needs the bad search (20%) and then 90%

@@ -101,8 +101,15 @@ class ContextUnit(BaseModel):
     removable: bool = True
 
 
+Decision = Literal["fails", "passes", "undecided"]
+
+
 class RateEstimate(BaseModel):
-    """Result of repeated trials (see BLUEPRINT 6.6)."""
+    """Result of repeated trials (see BLUEPRINT 6.6).
+
+    `threshold` is the failure rate the trials were judged against. `partial` is True when the
+    budget ran out before the planned trials finished; `note` says why.
+    """
 
     failures: int
     trials: int
@@ -110,4 +117,13 @@ class RateEstimate(BaseModel):
     ci_low: float
     ci_high: float
     slippage: dict[str, int] = Field(default_factory=dict)
-    decided: Literal["fails", "passes", "undecided"]
+    decided: Decision
+    threshold: float = 0.5
+    partial: bool = False
+    note: str | None = None
+
+    def still_fails(self) -> bool:
+        """`fails`, or `undecided` with the point estimate at or above the threshold."""
+        if self.decided == "fails":
+            return True
+        return self.decided == "undecided" and self.trials > 0 and self.p_hat >= self.threshold

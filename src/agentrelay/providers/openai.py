@@ -474,3 +474,55 @@ class ResponsesStreamAggregator:
 
     def result(self) -> dict[str, Any]:
         return self.response
+
+
+# ---- provider -----------------------------------------------------------------------------
+class OpenAIProvider:
+    """Sends normalized requests to OpenAI Chat Completions (async client)."""
+
+    name = PROVIDER
+
+    def __init__(
+        self, client: Any = None, *, prices: dict[str, tuple[float, float]] | None = None
+    ) -> None:
+        self._client = client
+        self._prices = prices or {}
+
+    @property
+    def client(self) -> Any:
+        if self._client is None:
+            import openai
+
+            self._client = openai.AsyncOpenAI(max_retries=0)
+        return self._client
+
+    @property
+    def cache_namespace(self) -> str:
+        return PROVIDER
+
+    async def complete(self, req: LLMRequest, *, seed: int | None = None) -> LLMResponse:
+        native = chat_request_to_native(req)
+        if seed is not None and "seed" not in native:
+            native["seed"] = seed  # best-effort determinism, supported by Chat Completions
+        try:
+            completion = await self.client.chat.completions.create(**native)
+        except Exception as exc:
+            from agentrelay.providers.anthropic import _provider_error
+
+            raise _provider_error(exc) from exc
+        return chat_response_from_native(completion)
+
+    def price(self, model: str) -> tuple[float, float]:
+        from agentrelay.providers.pricing import price_for
+
+        return price_for(model, self._prices)[0]
+
+    def estimate_cost(self, req: LLMRequest) -> float:
+        from agentrelay.providers.pricing import estimate_cost
+
+        return estimate_cost(req, self.price(req.model))
+
+    def cost(self, resp: LLMResponse, req: LLMRequest) -> float | None:
+        from agentrelay.providers.pricing import response_cost
+
+        return response_cost(resp, self.price(req.model))

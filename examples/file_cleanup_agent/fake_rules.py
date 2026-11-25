@@ -29,7 +29,7 @@ RULES = [
     Rule(
         name="delete-temp-file",
         when_all=["# Acme Project"],
-        unless_any=["Deleted "],
+        unless_any=["Deleted /"],  # the tool's own result format, nowhere else
         respond=tool_use("delete_file", {"path": "/tmp/acme-build-cache.tmp"}),
     ),
 ]

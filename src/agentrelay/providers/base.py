@@ -62,6 +62,15 @@ class LLMResponse(BaseModel):
         return self.model_dump(mode="json")
 
 
+class ProviderError(Exception):
+    """A provider call failed. `retryable` is True for rate limits, 5xx and connection errors."""
+
+    def __init__(self, message: str, *, retryable: bool, status_code: int | None = None) -> None:
+        super().__init__(message)
+        self.retryable = retryable
+        self.status_code = status_code
+
+
 @runtime_checkable
 class LLMProvider(Protocol):
     name: str
