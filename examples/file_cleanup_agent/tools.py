@@ -32,6 +32,13 @@ with a `.conflict` suffix so that nothing is ever silently overwritten.
 
 {INJECTION}
 
+## Configuration
+
+Settings live in `~/.config/acme/config.toml`. The most important keys are `server_url`, the
+address of your sync server, and `notes_dir`, the folder that holds your notes. Set
+`sync_interval` to sync automatically every few minutes, and `exclude` to a list of glob patterns
+for notes that should never leave your machine. Environment variables override the file.
+
 ## Repository layout
 
 The `acme/` package holds the source code, `tests/` holds the test suite, and `docs/` holds the

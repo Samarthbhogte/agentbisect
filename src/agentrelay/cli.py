@@ -376,6 +376,125 @@ def _show_try(r: Any) -> None:
     )
 
 
+# ---- shrink -------------------------------------------------------------------------------
+SHRINK_EXIT = {"ok": 0, "unstable": 0, "partial": 3, "too_rare": 4, "not_failing": 4}
+
+
+@app.command("shrink")
+def shrink_decision(
+    run_ref: Annotated[
+        str, typer.Argument(metavar="RUN", help="Run id, unique prefix, or 'last'.")
+    ],
+    step: Annotated[str, typer.Option(help="s0023, 23, or auto (first failing LLM call).")],
+    oracle: Annotated[str, typer.Option(help="FILE.py:NAME, MODULE:NAME, or a configured name.")],
+    trials: Annotated[int, typer.Option(min=2, help="Trials for the baseline measurement.")] = 10,
+    fingerprint: Annotated[
+        str | None, typer.Option(help="Failure to preserve (default: the recorded one).")
+    ] = None,
+    removal: Annotated[
+        str,
+        typer.Option(
+            help="placeholder: keep removed tool results as a placeholder; "
+            "delete: remove the tool call and its result."
+        ),
+    ] = "placeholder",
+    provider: ProviderOpt = None,
+    fake_rules: FakeRulesOpt = None,
+    max_cost: MaxCostOpt = 2.0,
+    concurrency: ConcurrencyOpt = 4,
+    as_json: JsonFlag = False,
+) -> None:
+    """Shrink a failing decision to the smallest context that still fails."""
+    from agentrelay.cli_shrink import run_shrink
+    from agentrelay.cli_try import ProviderOptions, TryError
+    from agentrelay.oracles.api import OracleError
+    from agentrelay.providers.registry import ProviderSetupError
+
+    if removal not in ("placeholder", "delete"):
+        err.print("[red]error:[/red] --removal must be placeholder or delete")
+        raise typer.Exit(2)
+    try:
+        result, path = run_shrink(
+            run_ref,
+            step_ref=step,
+            oracle_ref=oracle,
+            fingerprint=fingerprint,
+            trials=trials,
+            removal=removal,  # type: ignore[arg-type]
+            opts=ProviderOptions(
+                provider=provider, fake_rules=fake_rules, max_cost=max_cost, concurrency=concurrency
+            ),
+        )
+    except (RunNotFound, AmbiguousRunRef) as exc:
+        err.print(f"[red]error:[/red] {escape(str(exc.args[0]))}")
+        raise typer.Exit(1) from exc
+    except OracleError as exc:
+        err.print(f"[red]oracle error:[/red] {escape(str(exc))}")
+        raise typer.Exit(2) from exc
+    except (TryError, ProviderSetupError) as exc:
+        err.print(f"[red]error:[/red] {escape(str(exc))}")
+        raise typer.Exit(2) from exc
+    if as_json:
+        _print_json(result.model_dump(mode="json"))
+    else:
+        _show_shrink(result, path, oracle, provider, fake_rules)
+    raise typer.Exit(SHRINK_EXIT[result.status])
+
+
+def _show_shrink(
+    r: Any, path: Path, oracle_ref: str, provider: str | None, fake_rules: str | None
+) -> None:
+    console.print(f"[bold]AgentRelay shrink[/bold] — run {r.run_id[:10]}… step {r.step_id}")
+    console.print(
+        f"Oracle: {escape(r.oracle or '')}   fingerprint: {escape(r.fingerprint)}   "
+        f"removal: {r.removal}\n"
+    )
+    b = r.baseline
+    console.print(f"Baseline failure rate   {_rate_line(b)}")
+    if r.status in ("too_rare", "not_failing"):
+        console.print(f"\n[yellow]{escape(r.message)}[/yellow]")
+        return
+    pct = f"−{100 * r.reduction:.1f}%"
+    console.print(
+        f"Minimal repro           {len(r.minimal_ids)} of {len(r.units)} units, "
+        f"{r.minimal_tokens:,} of {r.original_tokens:,} tokens ({pct})"
+    )
+    if r.minimal_estimate is not None:
+        console.print(f"Minimal failure rate    {_rate_line(r.minimal_estimate)}")
+    if r.slippage:
+        other = ", ".join(f"{k} ×{v}" for k, v in sorted(r.slippage.items()))
+        console.print(f"Slippage                {escape(other)}  (other failures, not counted)")
+    style = {"ok": "green", "unstable": "yellow", "partial": "yellow"}.get(r.status, "red")
+    console.print(f"Status                  [{style}]{r.status}[/{style}]: {escape(r.message)}")
+    by_id = {u.id: u for u in r.units}
+    kept = set(r.minimal_ids)
+    chunked_parents = {u.parent for u in r.units if u.parent and u.id in kept}
+    table = Table(box=None, header_style="bold", title="\nMinimal context", title_justify="left")
+    for col in ("unit", "kind", "tokens", "text"):
+        table.add_column(col, overflow="fold" if col == "text" else "ellipsis")
+    for uid in r.minimal_ids:
+        u = by_id[uid]
+        if uid in chunked_parents:
+            continue  # shown through its kept chunks
+        label = uid if u.removable else f"{uid} (always kept)"
+        preview = " ".join(u.text.split())
+        preview = preview if len(preview) <= 90 else preview[:89] + "…"
+        table.add_row(label, u.kind, str(u.tokens), escape(preview))
+    console.print(table)
+    console.print(
+        f"\nSpent: {r.trials} trials ({r.cached_trials} cached), {r.provider_calls} "
+        f"provider calls, ${r.cost_usd:.4f}; {r.candidates_tested} candidates tested"
+    )
+    console.print(f"Saved: {escape(str(path))}")
+    extra = (f" --provider {provider}" if provider else "") + (
+        f" --fake-rules {fake_rules}" if fake_rules else ""
+    )
+    console.print(
+        f"Next:  relay explain {r.run_id[:10]} --step {r.step_id} --oracle "
+        f"{escape(oracle_ref)}{escape(extra)}"
+    )
+
+
 # ---- doctor -------------------------------------------------------------------------------
 @app.command()
 def doctor() -> None:

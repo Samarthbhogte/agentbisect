@@ -40,11 +40,16 @@ criterion passes.
 - Coverage: stats 97–100%, replay 92%, oracles 94–95%, cache 94%.
 
 ## M4 — Context decomposition and shrink
-- [ ] `context/units.py`, `context/constraints.py`, `algo/ddmin.py`, `relay shrink`, artifact
-- [ ] Accept: `recompose(req, all_ids) == req` (hypothesis)
-- [ ] Accept: every recomposed request passes `validate()`
-- [ ] Accept: all ddmin properties from 6.8
-- [ ] Accept: file_cleanup minimal set contains injected chunk, ≤ 3 removable units
+- [x] `context/units.py`, `context/constraints.py`, `algo/ddmin.py`, `algo/shrink.py`, `relay shrink`, artifact
+- [x] Accept: `recompose(req, all_ids) == req` (hypothesis, 200 generated requests, both removal modes)
+- [x] Accept: every recomposed request passes `validate()` (hypothesis, 300 random keep-sets)
+- [x] Accept: all ddmin properties from 6.8 (hypothesis, 400 scenarios with groups, chunks and
+  non-removable units): result ⊆ input, still fails, 1-minimal, groups never split,
+  non-removable kept, result equals the culprit set exactly, each question asked once
+- [x] Accept: file_cleanup minimal set = the tool result + the injected chunk (2 removable units),
+  225 of 590 tokens, confirmed at 12/16. Refund isolates the stale policy chunk; calendar keeps
+  the `create_event` description.
+- Coverage: context 98%, algo/stats/replay 92–100% (98% combined).
 
 ## M5 — Explain and reports
 - [ ] `algo/explain.py`, interactions, terminal + HTML report, `--json`
@@ -173,6 +178,31 @@ criterion passes.
   `AGENTRELAY_MODEL` sets it, and `--provider anthropic` without one is a clear usage error.
   Tests use `fake-model`. (Changing the model name changes FakeLLM's seeded draws, so the
   documented failing seeds are now 2 for file_cleanup, 7 for refund, and 1 for calendar.)
+- M4: never removable: the first user message and the last user message with text (the spec's
+  example marks `msg.0 (task)` this way). The conversation therefore always starts with the user.
+- M4: in `placeholder` mode (default) assistant messages that call tools are not removable: their
+  tool results stay as placeholders, so the calls must stay too. In `delete` mode the assistant
+  message and the tool results answering it form one group (`pair.msg.<i>`) and go together.
+  A user message unit covers its text; its tool results are separate units.
+- M4: `recompose` treats a partially kept group as removed, and a chunk as removed when its tool
+  result is; merging same-role messages puts tool results first. If every system section is
+  removed, `system` becomes `None`; removed sections/chunks leave the rest joined and trimmed.
+- M4: chunks pack paragraphs (then lines) greedily up to ~800 characters. The file_cleanup README
+  and the refund policy documents were lengthened so they cross the ~400-token chunking threshold
+  and each refund document is its own chunk; the documented failing seeds did not change.
+- M4: `ddmin()` returns a `DDMinResult` (minimal ids, accepted candidates, step log); baseline,
+  confirmation and back-off live in `algo/shrink.py`, whose `ShrinkResult` is the artifact.
+  ddmin first asks whether removing everything removable still fails, and in pass 1 the chunks of
+  every kept unit (including non-removable ones) are kept. Hypothesis found the latter bug.
+- M4: `still_fails` uses `RateEstimate.still_fails()` (`fails`, or `undecided` at max trials with
+  `p_hat >= threshold`), following 6.6's "decide by p_hat at max_trials" rather than 6.8's
+  stricter `decided == "fails"`.
+- M4: confirmation always runs the full 16 trials. Back-off walks the accepted candidates from
+  smallest to largest (then the full request) and keeps the first that confirms.
+- M4: `relay shrink` statuses and exit codes: ok/unstable 0, partial (budget) 3, too_rare or
+  not_failing 4. A partial result carries the smallest failing candidate found so far.
+  `--trials` sets the baseline trial count. The recorded response must fail the oracle, unless
+  `--fingerprint` names the failure to look for.
 
 ## Known gaps
 - No real model prices are built in (see Decisions); set them in `agentrelay.toml`. Recorded
