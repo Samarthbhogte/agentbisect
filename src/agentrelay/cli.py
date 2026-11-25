@@ -573,6 +573,166 @@ def explain_decision(
     raise typer.Exit(EXPLAIN_EXIT[result.status])
 
 
+# ---- emit-test ----------------------------------------------------------------------------
+@app.command("emit-test")
+def emit_test_cmd(
+    run_ref: Annotated[
+        str, typer.Argument(metavar="RUN", help="Run id, unique prefix, or 'last'.")
+    ],
+    step: Annotated[str, typer.Option(help="s0023 or 23 (a step you ran shrink/explain on).")],
+    out: Annotated[Path, typer.Option(help="Directory for the test and its scenario.")] = Path(
+        "tests/agentrelay"
+    ),
+    trials: Annotated[int, typer.Option(min=1, help="Trials per test run.")] = 10,
+    max_failure_rate: Annotated[
+        float, typer.Option(min=0.0, max=1.0, help="Fail the test above this failure rate.")
+    ] = 0.1,
+    system_prompt: Annotated[
+        str | None, typer.Option(help="Current system prompt to test, e.g. myagent.prompts:SYSTEM.")
+    ] = None,
+    tools: Annotated[
+        str | None, typer.Option(help="Current tool specs to test, e.g. myagent.prompts:TOOLS.")
+    ] = None,
+    oracle: Annotated[
+        str | None, typer.Option(help="Run shrink first with this oracle if no artifact exists.")
+    ] = None,
+    force: Annotated[bool, typer.Option("--force", help="Overwrite an existing test.")] = False,
+    provider: ProviderOpt = None,
+    fake_rules: FakeRulesOpt = None,
+    max_cost: MaxCostOpt = 2.0,
+) -> None:
+    """Write a pytest regression test for a diagnosed decision."""
+    from agentrelay.algo.shrink import ShrinkResult
+    from agentrelay.cli_shrink import prepare_decision, shrink_decision
+    from agentrelay.cli_try import ProviderOptions, TryError
+    from agentrelay.emit.test_emitter import EmitError, emit_test
+    from agentrelay.oracles.api import OracleError
+    from agentrelay.providers.registry import ProviderSetupError
+
+    store = _store()
+    run = _load(store, run_ref)
+    step_id = step if step.startswith("s") else f"s{int(step):04d}"
+    shrink_result: ShrinkResult | None = None
+    culprits: list[str] | None = None
+    for name in (f"explain-{step_id}.json", f"shrink-{step_id}.json"):
+        try:
+            data = store.load_artifact(run.id, name)
+        except FileNotFoundError:
+            continue
+        data.pop("schema", None)
+        if name.startswith("explain"):
+            shrink_result = ShrinkResult.model_validate(data["shrink"])
+            culprits = [a["unit_id"] for a in data.get("attributions", []) if a.get("culprit")]
+        else:
+            shrink_result = ShrinkResult.model_validate(data)
+        break
+    try:
+        if shrink_result is None:
+            if oracle is None:
+                raise TryError(
+                    f"no shrink or explain result for {step_id}; run `relay explain` "
+                    "first, or pass --oracle to shrink now"
+                )
+            d = prepare_decision(
+                run.id,
+                step_ref=step_id,
+                oracle_ref=oracle,
+                fingerprint=None,
+                opts=ProviderOptions(provider=provider, fake_rules=fake_rules, max_cost=max_cost),
+            )
+            shrink_result, _ = shrink_decision(d, trials=10, removal="placeholder")
+        emitted = emit_test(
+            shrink_result,
+            out_dir=out,
+            culprits=culprits or None,
+            trials=trials,
+            max_failure_rate=max_failure_rate,
+            system_prompt=system_prompt,
+            tools=tools,
+            redactor=store.redactor,
+            overwrite=force,
+        )
+    except (EmitError, TryError, ProviderSetupError) as exc:
+        err.print(f"[red]error:[/red] {escape(str(exc))}")
+        raise typer.Exit(2) from exc
+    except OracleError as exc:
+        err.print(f"[red]oracle error:[/red] {escape(str(exc))}")
+        raise typer.Exit(2) from exc
+    console.print(f"wrote {escape(str(emitted.test))}")
+    console.print(f"wrote {escape(str(emitted.scenario))}")
+    for warning in emitted.warnings:
+        err.print(f"[yellow]warning:[/yellow] {escape(warning)}")
+    if not (system_prompt or tools):
+        console.print(
+            "[dim]Tip: pass --system-prompt/--tools (or set them in agentrelay.toml) so "
+            "the test checks your current prompt instead of the recorded one.[/dim]"
+        )
+    console.print(f"Run it: pytest {escape(str(emitted.test))}")
+
+
+# ---- ci -----------------------------------------------------------------------------------
+@app.command("ci")
+def ci_cmd(
+    path: Annotated[Path, typer.Option(help="Where emitted tests live.")] = Path(
+        "tests/agentrelay"
+    ),
+    trials: Annotated[int | None, typer.Option(help="Override each scenario's trials.")] = None,
+    provider: ProviderOpt = None,
+    fake_rules: FakeRulesOpt = None,
+    max_cost: Annotated[float, typer.Option("--max-cost", help="Total budget (USD).")] = 2.0,
+    report: Annotated[Path, typer.Option(help="JSON report path.")] = Path(
+        "agentrelay-report.json"
+    ),
+    as_json: JsonFlag = False,
+) -> None:
+    """Run every regression scenario; exit 1 if any failure has come back."""
+    from agentrelay.cli_ci import run_ci
+
+    outcome = run_ci(
+        path,
+        trials=trials,
+        provider=provider,
+        fake_rules=fake_rules,
+        max_cost=max_cost,
+        report_path=report,
+    )
+    if as_json:
+        _print_json(outcome.model_dump(mode="json"))
+    else:
+        _show_ci(outcome)
+    raise typer.Exit(outcome.exit_code)
+
+
+def _show_ci(o: Any) -> None:
+    if not o.results:
+        console.print(f"no scenarios found under {escape(o.path)}")
+        return
+    table = Table(box=None, header_style="bold")
+    for col in ("scenario", "failure rate", "allowed", "result", "provider"):
+        table.add_column(col)
+    style = {"pass": "green", "regression": "red", "error": "red", "skipped": "yellow"}
+    for r in o.results:
+        rate = (
+            f"{100 * r.estimate.p_hat:.0f}% ({r.estimate.failures}/{r.estimate.trials})"
+            if r.estimate
+            else "-"
+        )
+        s = style[r.status]
+        table.add_row(
+            escape(r.name),
+            rate,
+            f"{100 * r.max_failure_rate:.0f}%",
+            f"[{s}]{r.status}[/{s}]",
+            escape(r.provider or "-"),
+        )
+    console.print(table)
+    for r in o.results:
+        if r.status in ("regression", "error"):
+            console.print(f"[red]{escape(r.summary())}[/red]")
+    console.print(f"\n{escape(o.headline)}")
+    console.print(f"Report: {escape(o.report_path)}")
+
+
 # ---- doctor -------------------------------------------------------------------------------
 @app.command()
 def doctor() -> None:

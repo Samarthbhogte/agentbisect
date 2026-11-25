@@ -59,6 +59,11 @@ class ShrinkResult(BaseModel):
     run_id: str | None = None
     step_id: str | None = None
     oracle: str | None = None
+    # How the diagnosis was made, so `relay emit-test` can write a self-contained scenario.
+    oracle_ref: str | None = None
+    recorded_provider: str | None = None
+    provider: str | None = None
+    fake_rules: str | None = None
 
     @property
     def reduction(self) -> float:

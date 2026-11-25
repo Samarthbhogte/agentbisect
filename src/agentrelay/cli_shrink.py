@@ -33,6 +33,8 @@ class Decision:
     fingerprint: str
     provider: LLMProvider
     runner: TrialRunner
+    oracle_ref: str
+    opts: ProviderOptions
 
     @property
     def is_fake(self) -> bool:
@@ -85,7 +87,7 @@ def prepare_decision(
         concurrency=opts.concurrency,
         cache_namespace=cache_namespace(provider),
     )
-    return Decision(store, run, step, req, oracle, target, provider, runner)
+    return Decision(store, run, step, req, oracle, target, provider, runner, oracle_ref, opts)
 
 
 def shrink_decision(d: Decision, *, trials: int, removal: Removal) -> tuple[ShrinkResult, Path]:
@@ -98,7 +100,15 @@ def shrink_decision(d: Decision, *, trials: int, removal: Removal) -> tuple[Shri
         )
     )
     result = result.model_copy(
-        update={"run_id": d.run.id, "step_id": d.step.id, "oracle": d.oracle.name}
+        update={
+            "run_id": d.run.id,
+            "step_id": d.step.id,
+            "oracle": d.oracle.name,
+            "oracle_ref": d.oracle_ref,
+            "recorded_provider": d.step.provider,
+            "provider": d.provider.name,
+            "fake_rules": d.opts.fake_rules,
+        }
     )
     path = d.store.save_artifact(d.run.id, f"shrink-{d.step.id}.json", result)
     return result, path

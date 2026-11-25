@@ -1,0 +1,89 @@
+# Reusable workflow: run AgentRelay regression scenarios in CI.
+#
+# Use it from another repository's workflow:
+#
+#   jobs:
+#     agentrelay:
+#       uses: <owner>/<repo>/.github/workflows/agentrelay-action.yml@main
+#       with:
+#         scenarios-path: tests/agentrelay
+#         provider: anthropic
+#       secrets: inherit
+#
+# The job fails when any scenario regresses, and a summary table is added to the run page.
+name: agentrelay
+
+on:
+  workflow_call:
+    inputs:
+      scenarios-path:
+        description: Directory containing the emitted tests and their scenarios/ folder.
+        type: string
+        default: tests/agentrelay
+      max-cost:
+        description: Total budget in USD for all scenarios.
+        type: string
+        default: "2.00"
+      trials:
+        description: Override the number of trials per scenario (empty = as emitted).
+        type: string
+        default: ""
+      provider:
+        description: anthropic, openai or fake (empty = as recorded).
+        type: string
+        default: ""
+      fake-rules:
+        description: FakeLLM rules file, used with provider fake.
+        type: string
+        default: ""
+      python-version:
+        type: string
+        default: "3.12"
+      install-command:
+        description: Installs your project, including agentrelay.
+        type: string
+        default: uv sync --all-extras
+    secrets:
+      ANTHROPIC_API_KEY:
+        required: false
+      OPENAI_API_KEY:
+        required: false
+
+jobs:
+  scenarios:
+    runs-on: ubuntu-latest
+    env:
+      UV_PYTHON: ${{ inputs.python-version }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      - name: Restore the trial cache
+        uses: actions/cache@v4
+        with:
+          path: .agentrelay/cache.db
+          key: agentrelay-${{ hashFiles(format('{0}/**/*.json', inputs.scenarios-path)) }}
+          restore-keys: agentrelay-
+      - name: Install
+        run: ${{ inputs.install-command }}
+      - name: Run regression scenarios
+        env:
+          SCENARIOS_PATH: ${{ inputs.scenarios-path }}
+          MAX_COST: ${{ inputs.max-cost }}
+          TRIALS: ${{ inputs.trials }}
+          PROVIDER: ${{ inputs.provider }}
+          FAKE_RULES: ${{ inputs.fake-rules }}
+        run: |
+          args=(--path "$SCENARIOS_PATH" --max-cost "$MAX_COST")
+          [ -n "$TRIALS" ] && args+=(--trials "$TRIALS")
+          [ -n "$PROVIDER" ] && args+=(--provider "$PROVIDER")
+          [ -n "$FAKE_RULES" ] && args+=(--fake-rules "$FAKE_RULES")
+          uv run relay ci "${args[@]}"
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agentrelay-report
+          path: agentrelay-report.json
+          if-no-files-found: ignore

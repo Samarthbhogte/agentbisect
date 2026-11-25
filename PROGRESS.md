@@ -63,9 +63,14 @@ criterion passes.
 - Coverage: algo 94–100%, context 98–100%, report 92–99% (97% combined).
 
 ## M6 — Test emitter and CI
-- [ ] `emit/`, `run_scenario`, current-prompt override, `relay ci`, GitHub Action
-- [ ] Accept: emitted test fails on buggy prompt, passes after fix
-- [ ] Accept: `relay ci` exit codes and Markdown summary
+- [x] `emit/`, `agentrelay.testing.run_scenario`, current-prompt override, `relay emit-test`,
+  `relay ci`, reusable workflow `.github/workflows/agentrelay-action.yml`, pytest marker plugin
+- [x] Accept: the emitted file_cleanup test fails against the buggy prompt (7/10 > 10%) and passes
+  after applying the documented fix, run through a real `pytest` process
+- [x] Accept: `relay ci` exits 1 on regression and 0 otherwise, writes `agentrelay-report.json`
+  and appends a Markdown table to `$GITHUB_STEP_SUMMARY`
+- The repository's own CI runs the reusable workflow on a committed example regression test
+  (`examples/file_cleanup_agent/regression/`), so the action is exercised on every push.
 
 ## M7 — Program replay, diff, bisect
 - [ ] `replay/program.py`, `cassette.py`, `determinism.py`, `relay replay`, `relay diff`, `relay bisect`
@@ -234,6 +239,31 @@ criterion passes.
   `report.html` (one per run: the latest explain wins). Exit codes match shrink (no_culprit 0).
 - M5: the HTML report has no JavaScript; the chart is server-rendered inline SVG. Text is escaped
   by Jinja autoescape, and culprit text is highlighted after escaping.
+- M6: a scenario stores the minimal failing request, the oracle reference, fingerprint, culprits,
+  trials, allowed failure rate, baseline, the provider the step was recorded with, and the
+  FakeLLM rules file used for the diagnosis. Shrink artifacts now record `oracle_ref`,
+  `recorded_provider`, `provider` and `fake_rules` so this is possible.
+- M6: current-prompt overrides, in priority order: `run_scenario`/`relay ci` arguments, the
+  references stored at emit time (`--system-prompt`, `--tools`), then `agentrelay.toml`
+  (`system_prompt`, `tools`). The system override replaces the whole system prompt of the
+  minimal request (that is where fixes usually go); the tools override replaces the tool specs.
+  `AGENTRELAY_MODEL` overrides the model. References resolve against the project root found
+  from the scenario file (nearest `agentrelay.toml`, else `pyproject.toml`).
+- M6: provider: `AGENTRELAY_PROVIDER`, else the provider the step was recorded with. Without its
+  API key a test is skipped (`pytest.skip`, or "skipped" in `relay ci`), unless
+  `AGENTRELAY_REQUIRE_LIVE=1`, which makes it an error. With `fake`, `AGENTRELAY_FAKE_RULES` or
+  the stored rules file is used.
+- M6: a test passes when failures/trials ≤ `max_failure_rate` (defaults 10 trials, 10%). It runs
+  all trials (no early stopping) and uses the project's trial cache, so unchanged scenarios cost
+  nothing on re-runs. Per-scenario budget: `AGENTRELAY_MAX_COST` (default $1); `relay ci
+  --max-cost` is a total spread across scenarios.
+- M6: `relay emit-test` uses `explain-<step>.json` (its culprits) or `shrink-<step>.json`; with
+  `--oracle` and no artifact it shrinks first. File names: `<run id[:6]>_<step>_<fingerprint
+  slug>`. It refuses to overwrite without `--force`, and warns when the scenario still matches a
+  redaction pattern.
+- M6: `relay ci` exit codes: 1 if any scenario regressed or errored, else 0 (skips don't fail).
+- M6: a `pytest11` entry point registers the `agentrelay` marker in projects that install
+  agentrelay, so emitted tests run without "unknown marker" warnings.
 
 ## Known gaps
 - No real model prices are built in (see Decisions); set them in `agentrelay.toml`. Recorded

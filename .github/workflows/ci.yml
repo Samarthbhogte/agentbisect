@@ -24,3 +24,11 @@ jobs:
       - run: uv run ruff format --check .
       - run: uv run mypy
       - run: uv run pytest
+
+  # Runs the reusable AgentRelay workflow on the committed example regression test, so the
+  # action users call is exercised on every push.
+  agentrelay-example:
+    uses: ./.github/workflows/agentrelay-action.yml
+    with:
+      scenarios-path: examples/file_cleanup_agent/regression
+      provider: fake
