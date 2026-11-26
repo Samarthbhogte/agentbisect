@@ -56,10 +56,10 @@ COMMANDS = [
 
 def run_all() -> list[tuple[str, str]]:
     with tempfile.TemporaryDirectory(dir="/tmp") as tmp:
-        home = Path(tmp) / ".agentrelay"
+        home = Path(tmp) / ".agentbisect"
         env = {
             **os.environ,
-            "AGENTRELAY_HOME": str(home),
+            "AGENTBISECT_HOME": str(home),
             "COLUMNS": str(WIDTH),
             "FORCE_COLOR": "1",
             "TERM": "xterm-256color",
@@ -71,7 +71,7 @@ def run_all() -> list[tuple[str, str]]:
             )
             text = proc.stdout + proc.stderr
             for prefix in (str(home.resolve()), str(home)):  # /tmp is /private/tmp on macOS
-                text = text.replace(prefix, ".agentrelay")
+                text = text.replace(prefix, ".agentbisect")
             out.append((shown, text))
         return out
 
@@ -107,7 +107,7 @@ def write_cast(results: list[tuple[str, str]]) -> None:
         "version": 2,
         "width": WIDTH,
         "height": 40,
-        "title": "AgentRelay: why did the agent delete the project?",
+        "title": "AgentBisect: why did the agent delete the project?",
         "env": {"TERM": "xterm-256color", "SHELL": "/bin/sh"},
     }
     lines = [json.dumps(header)] + [json.dumps(e) for e in events]

@@ -12,8 +12,8 @@ import pytest
 from examples.file_cleanup_agent.agent import main as cleanup_main
 from typer.testing import CliRunner
 
-from agentrelay.cli import _guess_name, app
-from agentrelay.store import RunStore
+from agentbisect.cli import _guess_name, app
+from agentbisect.store import RunStore
 
 REPO = Path(__file__).resolve().parents[2]
 runner = CliRunner()
@@ -40,7 +40,7 @@ def test_show_step_prefix_and_json() -> None:
     assert one.exit_code == 0, one.output
     assert "s0003 tool_call delete_file" in one.stdout and "/home/user/project" in one.stdout
     dumped = json.loads(runner.invoke(app, ["show", "last", "--json"]).stdout)
-    assert dumped["id"] == run.id and dumped["schema"] == "agentrelay/v1"
+    assert dumped["id"] == run.id and dumped["schema"] == "agentbisect/v1"
     assert len(dumped["steps"]) == 5
 
 
@@ -63,12 +63,12 @@ def test_ls_lists_and_filters() -> None:
 def test_init_creates_config_and_gitignore(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     (tmp_path / ".gitignore").write_text("node_modules/")
     assert runner.invoke(app, ["init", str(tmp_path)]).exit_code == 0
-    assert (tmp_path / "agentrelay.toml").is_file()
-    assert (tmp_path / ".agentrelay").is_dir()
-    assert (tmp_path / ".gitignore").read_text() == "node_modules/\n.agentrelay/\n"
+    assert (tmp_path / "agentbisect.toml").is_file()
+    assert (tmp_path / ".agentbisect").is_dir()
+    assert (tmp_path / ".gitignore").read_text() == "node_modules/\n.agentbisect/\n"
     again = runner.invoke(app, ["init", str(tmp_path)])
     assert "already exists" in again.stdout
-    assert (tmp_path / ".gitignore").read_text().count(".agentrelay") == 1
+    assert (tmp_path / ".gitignore").read_text().count(".agentbisect") == 1
 
 
 def test_guess_name() -> None:
@@ -84,7 +84,7 @@ def _relay() -> str:
 
 
 def test_record_runs_a_command_and_prints_the_run_id(isolated_home: Path) -> None:
-    env = {**os.environ, "AGENTRELAY_HOME": str(isolated_home)}
+    env = {**os.environ, "AGENTBISECT_HOME": str(isolated_home)}
     proc = subprocess.run(
         [
             _relay(),
@@ -114,14 +114,14 @@ def test_record_runs_a_command_and_prints_the_run_id(isolated_home: Path) -> Non
 def test_record_names_implicit_runs_after_the_script(tmp_path: Path, isolated_home: Path) -> None:
     script = tmp_path / "weather_bot.py"
     script.write_text(
-        "import agentrelay as relay\n"
-        "from agentrelay.providers.fake import FakeLLM, text\n"
-        "from agentrelay.providers.fake_http import fake_anthropic_client\n"
+        "import agentbisect as relay\n"
+        "from agentbisect.providers.fake import FakeLLM, text\n"
+        "from agentbisect.providers.fake_http import fake_anthropic_client\n"
         "client = relay.wrap(fake_anthropic_client(FakeLLM(default=text('hi'))))\n"
         "client.messages.create(model='m', max_tokens=8,\n"
         "                       messages=[{'role': 'user', 'content': 'x'}])\n"
     )
-    env = {**os.environ, "AGENTRELAY_HOME": str(isolated_home)}
+    env = {**os.environ, "AGENTBISECT_HOME": str(isolated_home)}
     proc = subprocess.run(
         [_relay(), "record", "--", sys.executable, str(script)],
         cwd=REPO,
@@ -137,7 +137,7 @@ def test_record_names_implicit_runs_after_the_script(tmp_path: Path, isolated_ho
 
 
 def test_record_passes_through_the_exit_code(isolated_home: Path) -> None:
-    env = {**os.environ, "AGENTRELAY_HOME": str(isolated_home)}
+    env = {**os.environ, "AGENTBISECT_HOME": str(isolated_home)}
     proc = subprocess.run(
         [_relay(), "record", "--", sys.executable, "-c", "raise SystemExit(3)"],
         cwd=REPO,

@@ -9,8 +9,8 @@ from typing import Any
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from agentrelay.algo.ddmin import ddmin
-from agentrelay.schema import ContextUnit
+from agentbisect.algo.ddmin import ddmin
+from agentbisect.schema import ContextUnit
 
 
 def unit(

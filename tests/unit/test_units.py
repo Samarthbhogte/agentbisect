@@ -7,8 +7,8 @@ from typing import Any
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from agentrelay.context.constraints import merge_same_role, validate
-from agentrelay.context.units import (
+from agentbisect.context.constraints import merge_same_role, validate
+from agentbisect.context.units import (
     PLACEHOLDER,
     all_ids,
     decompose,
@@ -17,7 +17,7 @@ from agentrelay.context.units import (
     split_chunks,
     split_sections,
 )
-from agentrelay.providers.base import ContentBlock, LLMRequest, Message, ToolSpec
+from agentbisect.providers.base import ContentBlock, LLMRequest, Message, ToolSpec
 
 WORDS = [
     "agent",

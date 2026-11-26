@@ -8,11 +8,11 @@ import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
-from agentrelay.ids import new_ulid
-from agentrelay.providers.base import LLMRequest, Message, text, text_block
-from agentrelay.schema import Run, Step, request_hash, step_id
-from agentrelay.store import AmbiguousRunRef, BlobStore, RunNotFound, RunStore, resolve_home
-from agentrelay.store.index import RunFilter
+from agentbisect.ids import new_ulid
+from agentbisect.providers.base import LLMRequest, Message, text, text_block
+from agentbisect.schema import Run, Step, request_hash, step_id
+from agentbisect.store import AmbiguousRunRef, BlobStore, RunNotFound, RunStore, resolve_home
+from agentbisect.store.index import RunFilter
 
 T0 = datetime(2026, 11, 25, 12, 0, tzinfo=UTC)
 
@@ -71,7 +71,7 @@ def make_run(n_steps: int, payload: str = "", **kw: object) -> Run:
 
 @pytest.fixture
 def store(tmp_path: Path) -> RunStore:
-    return RunStore(tmp_path / ".agentrelay")
+    return RunStore(tmp_path / ".agentbisect")
 
 
 def test_round_trip_50_steps_with_save_run(store: RunStore) -> None:
@@ -129,11 +129,11 @@ def test_every_stored_file_carries_schema(store: RunStore) -> None:
     store.save_run(run)
     store.save_artifact(run.id, "shrink.json", {"minimal": ["msg.1"]})
     run_dir = store.run_dir(run.id)
-    assert json.loads((run_dir / "run.json").read_text())["schema"] == "agentrelay/v1"
+    assert json.loads((run_dir / "run.json").read_text())["schema"] == "agentbisect/v1"
     assert json.loads((run_dir / "steps.jsonl").read_text().splitlines()[0]) == {
-        "schema": "agentrelay/v1"
+        "schema": "agentbisect/v1"
     }
-    assert store.load_artifact(run.id, "shrink.json")["schema"] == "agentrelay/v1"
+    assert store.load_artifact(run.id, "shrink.json")["schema"] == "agentbisect/v1"
 
 
 def test_torn_final_line_is_ignored(store: RunStore) -> None:
@@ -183,15 +183,15 @@ def test_artifacts_text_and_json(store: RunStore) -> None:
 
 
 def test_resolve_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("AGENTRELAY_HOME", raising=False)
+    monkeypatch.delenv("AGENTBISECT_HOME", raising=False)
     project = tmp_path / "proj"
     nested = project / "a" / "b"
     nested.mkdir(parents=True)
     (project / "pyproject.toml").write_text("")
-    assert resolve_home(nested) == (project / ".agentrelay").resolve()
+    assert resolve_home(nested) == (project / ".agentbisect").resolve()
 
-    (project / "a" / ".agentrelay").mkdir()
-    assert resolve_home(nested) == (project / "a" / ".agentrelay").resolve()
+    (project / "a" / ".agentbisect").mkdir()
+    assert resolve_home(nested) == (project / "a" / ".agentbisect").resolve()
 
-    monkeypatch.setenv("AGENTRELAY_HOME", str(tmp_path / "custom"))
+    monkeypatch.setenv("AGENTBISECT_HOME", str(tmp_path / "custom"))
     assert resolve_home(nested) == (tmp_path / "custom").resolve()

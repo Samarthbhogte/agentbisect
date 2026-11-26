@@ -1,5 +1,5 @@
 {
- "schema": "agentrelay/v1",
+ "schema": "agentbisect/v1",
  "kind": "relaybench_case",
  "id": "case_13",
  "seed": 20261125,

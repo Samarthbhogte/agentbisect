@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import pytest
 
-from agentrelay.algo.explain import newcombe
-from agentrelay.context.neutralize import neutralize, removed_text
-from agentrelay.context.units import decompose, split_chunks, substitute, unit_text
-from agentrelay.providers.base import ContentBlock, LLMRequest, Message, ToolSpec
-from agentrelay.report.html import highlight
-from agentrelay.stats.estimate import make_estimate
+from agentbisect.algo.explain import newcombe
+from agentbisect.context.neutralize import neutralize, removed_text
+from agentbisect.context.units import decompose, split_chunks, substitute, unit_text
+from agentbisect.providers.base import ContentBlock, LLMRequest, Message, ToolSpec
+from agentbisect.report.html import highlight
+from agentbisect.stats.estimate import make_estimate
 
 
 def test_newcombe_difference_interval() -> None:

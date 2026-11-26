@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import re
 
-from agentrelay import Failure, oracle
-from agentrelay.providers.base import LLMResponse
-from agentrelay.schema import Run
+from agentbisect import Failure, oracle
+from agentbisect.providers.base import LLMResponse
+from agentbisect.schema import Run
 
 STALE_WINDOW = re.compile(r"\b60[- ]day|\b60 days", re.IGNORECASE)
 

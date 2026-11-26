@@ -7,20 +7,20 @@ import os
 from collections.abc import Callable, Sequence
 from typing import Any
 
-import agentrelay as relay
-from agentrelay.providers.base import LLMResponse
-from agentrelay.providers.fake import FakeLLM, Rule
+import agentbisect as relay
+from agentbisect.providers.base import LLMResponse
+from agentbisect.providers.fake import FakeLLM, Rule
 
-# The model id comes from --model or AGENTRELAY_MODEL. With --provider fake any name works.
+# The model id comes from --model or AGENTBISECT_MODEL. With --provider fake any name works.
 PLACEHOLDER_MODEL = "fake-model"
-DEFAULT_MODEL = os.environ.get("AGENTRELAY_MODEL", PLACEHOLDER_MODEL)
+DEFAULT_MODEL = os.environ.get("AGENTBISECT_MODEL", PLACEHOLDER_MODEL)
 MAX_TURNS = 8
 
 
 def make_client(provider: str, rules: Sequence[Rule], default: LLMResponse, seed: int) -> Any:
     """A wrapped Anthropic client. `fake` answers with FakeLLM rules, fully offline."""
     if provider == "fake":
-        from agentrelay.providers.fake_http import fake_anthropic_client
+        from agentbisect.providers.fake_http import fake_anthropic_client
 
         llm = FakeLLM(rules=rules, default=default)
         return relay.wrap(fake_anthropic_client(llm, seed=seed))
@@ -79,7 +79,7 @@ def cli(main: Callable[..., str], default_task: str, argv: Sequence[str] | None 
     if args.provider != "fake" and args.model == PLACEHOLDER_MODEL:
         parser.error(
             "--provider anthropic needs a real model: pass --model <model id> "
-            "or set AGENTRELAY_MODEL"
+            "or set AGENTBISECT_MODEL"
         )
     print(
         main(

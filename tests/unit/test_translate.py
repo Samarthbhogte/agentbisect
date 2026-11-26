@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from agentrelay.providers import anthropic as anth
-from agentrelay.providers import openai as oai
-from agentrelay.providers.base import LLMResponse
-from agentrelay.providers.fake import text, tool_use
+from agentbisect.providers import anthropic as anth
+from agentbisect.providers import openai as oai
+from agentbisect.providers.base import LLMResponse
+from agentbisect.providers.fake import text, tool_use
 
 ANTHROPIC_KWARGS = {
     "model": "fake-model",

@@ -7,5 +7,5 @@ __pycache__/
 .hypothesis/
 .coverage
 dist/
-.agentrelay/
+.agentbisect/
 my_regressions/

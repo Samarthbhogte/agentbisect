@@ -21,15 +21,15 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT.parent / "src"))
 
-from agentrelay.context.units import decompose, explained_ids, unit_text  # noqa: E402
-from agentrelay.providers.base import (  # noqa: E402
+from agentbisect.context.units import decompose, explained_ids, unit_text  # noqa: E402
+from agentbisect.providers.base import (  # noqa: E402
     ContentBlock,
     LLMRequest,
     Message,
     ToolSpec,
     text_block,
 )
-from agentrelay.providers.fake import Rule, text, tool_use  # noqa: E402
+from agentbisect.providers.fake import Rule, text, tool_use  # noqa: E402
 
 N_CASES = 30
 N_TWO_CULPRIT = 8
@@ -286,7 +286,7 @@ def build_case(index: int, rng: random.Random, two_culprits: bool) -> dict[str, 
         ),
     ]
     return {
-        "schema": "agentrelay/v1",
+        "schema": "agentbisect/v1",
         "kind": "relaybench_case",
         "id": f"case_{index:02d}",
         "seed": SEED,

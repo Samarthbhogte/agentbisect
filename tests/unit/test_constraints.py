@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from agentrelay.context.constraints import InvalidRequest, assert_valid, validate
-from agentrelay.providers.base import ContentBlock, LLMRequest, Message
+from agentbisect.context.constraints import InvalidRequest, assert_valid, validate
+from agentbisect.providers.base import ContentBlock, LLMRequest, Message
 
 
 def req(*messages: Message) -> LLMRequest:

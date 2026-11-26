@@ -4,7 +4,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from agentrelay.stats.estimate import default_threshold, make_estimate, sequential_decision, wilson
+from agentbisect.stats.estimate import default_threshold, make_estimate, sequential_decision, wilson
 
 
 @pytest.mark.parametrize(

@@ -8,12 +8,12 @@ from typing import Any
 
 import pytest
 
-import agentrelay as relay
-from agentrelay.providers.fake import FakeLLM, Rule, text, tool_use
-from agentrelay.providers.fake_http import fake_anthropic_client, fake_openai_client
-from agentrelay.schema import Run
-from agentrelay.sdk.tools import tool_info
-from agentrelay.store import RunStore
+import agentbisect as relay
+from agentbisect.providers.fake import FakeLLM, Rule, text, tool_use
+from agentbisect.providers.fake_http import fake_anthropic_client, fake_openai_client
+from agentbisect.schema import Run
+from agentbisect.sdk.tools import tool_info
+from agentbisect.store import RunStore
 
 RULES = [
     Rule(
@@ -96,7 +96,7 @@ def test_non_intercepted_attributes_pass_through() -> None:
     client = relay.wrap(raw)
     assert client.api_key == raw.api_key
     assert client.messages.count_tokens == raw.messages.count_tokens
-    assert "agentrelay.wrap" in repr(client)
+    assert "agentbisect.wrap" in repr(client)
 
 
 def test_api_errors_are_recorded_and_re_raised() -> None:
@@ -237,7 +237,7 @@ def test_run_status_output_and_error() -> None:
         {"q": 1},
         {"team": "x"},
     )
-    assert good.ended_at is not None and good.env["agentrelay"] == relay.__version__
+    assert good.ended_at is not None and good.env["agentbisect"] == relay.__version__
 
     with pytest.raises(RuntimeError), relay.run("bad"):
         raise RuntimeError("boom")
@@ -261,9 +261,9 @@ def test_entrypoint_records_path_and_return_value() -> None:
 
 
 def test_calls_outside_a_run_go_to_an_implicit_run(monkeypatch: pytest.MonkeyPatch) -> None:
-    from agentrelay.sdk.context import reset_state
+    from agentbisect.sdk.context import reset_state
 
-    monkeypatch.setenv("AGENTRELAY_RUN_NAME", "my_script")
+    monkeypatch.setenv("AGENTBISECT_RUN_NAME", "my_script")
     get_weather("Paris")
     get_weather("Rome")
     reset_state()  # what atexit does at interpreter shutdown
@@ -272,8 +272,20 @@ def test_calls_outside_a_run_go_to_an_implicit_run(monkeypatch: pytest.MonkeyPat
     assert [s.request["city"] for s in run.steps] == ["Paris", "Rome"]
 
 
+@pytest.mark.parametrize(
+    ("argv0", "name"),
+    [("-c", "inline"), ("-", "stdin"), ("", "interactive"), ("/x/my_agent.py", "my_agent")],
+)
+def test_implicit_run_names(monkeypatch: pytest.MonkeyPatch, argv0: str, name: str) -> None:
+    from agentbisect.sdk.context import _implicit_name
+
+    monkeypatch.delenv("AGENTBISECT_RUN_NAME", raising=False)
+    monkeypatch.setattr("sys.argv", [argv0])
+    assert _implicit_name() == name
+
+
 def test_disabled_sdk_records_nothing(monkeypatch: pytest.MonkeyPatch, isolated_home: Path) -> None:
-    monkeypatch.setenv("AGENTRELAY_DISABLED", "1")
+    monkeypatch.setenv("AGENTBISECT_DISABLED", "1")
     raw = fake_anthropic_client(llm())
     assert relay.wrap(raw) is raw
     with relay.run("t") as rec:
@@ -291,7 +303,7 @@ def test_disk_errors_never_reach_user_code(
     for method in ("start_run", "append_step", "finish_run", "save_run"):
         monkeypatch.setattr(RunStore, method, disk_full)
     client = relay.wrap(fake_anthropic_client(llm()))
-    with caplog.at_level(logging.WARNING, logger="agentrelay"):
+    with caplog.at_level(logging.WARNING, logger="agentbisect"):
         with relay.run("t"):
             answer = agent_loop(client)
         assert entry("y") == "done y"

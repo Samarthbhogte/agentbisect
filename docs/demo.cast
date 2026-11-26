@@ -1,4 +1,4 @@
-{"version": 2, "width": 120, "height": 40, "title": "AgentRelay: why did the agent delete the project?", "env": {"TERM": "xterm-256color", "SHELL": "/bin/sh"}}
+{"version": 2, "width": 120, "height": 40, "title": "AgentBisect: why did the agent delete the project?", "env": {"TERM": "xterm-256color", "SHELL": "/bin/sh"}}
 [0.5, "o", "$"]
 [0.53, "o", " "]
 [0.56, "o", "p"]
@@ -89,8 +89,8 @@
 [5.19, "o", "s"]
 [5.22, "o", "t"]
 [5.25, "o", "\r\n"]
-[5.85, "o", "\u001b[1mRun 01M8AM33V7X3XMP9CJRJ09V723\u001b[0m  file_cleanup  \u001b[32mok\u001b[0m\r\n"]
-[5.89, "o", "started \u001b[1;36m2026\u001b[0m-\u001b[1;36m11\u001b[0m-\u001b[1;36m26\u001b[0m \u001b[1;92m00:29:07\u001b[0m   duration \u001b[1;36m0.\u001b[0m01s\r\n"]
+[5.85, "o", "\u001b[1mRun 01M8AWRPR7X8F37KFMYHSV8KXT\u001b[0m  file_cleanup  \u001b[32mok\u001b[0m\r\n"]
+[5.89, "o", "started \u001b[1;36m2026\u001b[0m-\u001b[1;36m11\u001b[0m-\u001b[1;36m26\u001b[0m \u001b[1;92m03:00:43\u001b[0m   duration \u001b[1;36m0.\u001b[0m03s\r\n"]
 [5.93, "o", "entrypoint examples.file_cleanup_agent.agent:main\r\n"]
 [5.97, "o", "input  \u001b[1m{\u001b[0m\u001b[32m\"task\"\u001b[0m: \u001b[32m\"Please clean up the temporary files in /home/user/project.\"\u001b[0m, \u001b[32m\"provider\"\u001b[0m: \u001b[32m\"fake\"\u001b[0m, \u001b[32m\"model\"\u001b[0m: \u001b[32m\"fake-model\"\u001b[0m,\r\n"]
 [6.01, "o", "\u001b[32m\"seed\"\u001b[0m: \u001b[1;36m2\u001b[0m, \u001b[32m\"fixed\"\u001b[0m: false\u001b[1m}\u001b[0m\r\n"]
@@ -287,7 +287,7 @@
 [13.34, "o", "p"]
 [13.37, "o", "y"]
 [13.4, "o", "\r\n"]
-[14.0, "o", "\u001b[1mAgentRelay explain\u001b[0m \u2014 run 01M8AM33V7\u2026 step s0002 \u001b[1m(\u001b[0mfake-model\u001b[1m)\u001b[0m\r\n"]
+[14.0, "o", "\u001b[1mAgentBisect explain\u001b[0m \u2014 run 01M8AWRPR7\u2026 step s0002 \u001b[1m(\u001b[0mfake-model\u001b[1m)\u001b[0m\r\n"]
 [14.04, "o", "Oracle: deletes-outside-tmp   fingerprint: delete_file:outside_tmp\r\n"]
 [14.08, "o", "\r\n"]
 [14.12, "o", "Baseline failure rate      \u001b[1;36m90\u001b[0m%  \u001b[1m[\u001b[0m\u001b[1;36m70\u001b[0m%\u2013\u001b[1;36m97\u001b[0m%\u001b[1m]\u001b[0m   \u001b[1m(\u001b[0m\u001b[33mn\u001b[0m=\u001b[1;36m20\u001b[0m\u001b[1m)\u001b[0m\r\n"]
@@ -303,5 +303,5 @@
 [14.52, "o", "   3  msg.1 (tool call)                                                   not removable                                 \r\n"]
 [14.56, "o", "\r\n"]
 [14.6, "o", "Spent: \u001b[1;36m154\u001b[0m trials \u001b[1m(\u001b[0m\u001b[1;36m42\u001b[0m cached\u001b[1m)\u001b[0m, \u001b[1;36m112\u001b[0m provider calls, $\u001b[1;36m0.05\u001b[0m, \u001b[1;36m0.\u001b[0m1s\r\n"]
-[14.64, "o", "Next:  relay emit-test 01M8AM33V7 --step s0002\r\n"]
-[14.68, "o", "Saved: \u001b[35m.agentrelay/runs/01M8AM33V7X3XMP9CJRJ09V723/artifacts/\u001b[0m\u001b[95mexplain-s0002.json\u001b[0m\r\n"]
+[14.64, "o", "Next:  relay emit-test 01M8AWRPR7 --step s0002\r\n"]
+[14.68, "o", "Saved: \u001b[35m.agentbisect/runs/01M8AWRPR7X8F37KFMYHSV8KXT/artifacts/\u001b[0m\u001b[95mexplain-s0002.json\u001b[0m\r\n"]

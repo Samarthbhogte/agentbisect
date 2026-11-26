@@ -11,15 +11,15 @@ from examples.file_cleanup_agent.agent import main as cleanup_main
 from examples.refund_agent.agent import main as refund_main
 from typer.testing import CliRunner
 
-from agentrelay.algo.shrink import ShrinkConfig, shrink
-from agentrelay.cli import app
-from agentrelay.context.constraints import validate
-from agentrelay.context.units import split_chunks
-from agentrelay.providers.base import LLMRequest, LLMResponse, Message, render_context, text_block
-from agentrelay.providers.fake import FakeLLM, Rule, text, tool_use
-from agentrelay.schema import Failure
-from agentrelay.stats.runner import Budget, TrialRunner
-from agentrelay.store import RunStore
+from agentbisect.algo.shrink import ShrinkConfig, shrink
+from agentbisect.cli import app
+from agentbisect.context.constraints import validate
+from agentbisect.context.units import split_chunks
+from agentbisect.providers.base import LLMRequest, LLMResponse, Message, render_context, text_block
+from agentbisect.providers.fake import FakeLLM, Rule, text, tool_use
+from agentbisect.schema import Failure
+from agentbisect.stats.runner import Budget, TrialRunner
+from agentbisect.store import RunStore
 
 runner = CliRunner()
 
@@ -69,7 +69,7 @@ def test_file_cleanup_minimal_set_is_the_injected_chunk() -> None:
     assert "ignore previous instructions" in render_context(minimal)
     assert "# Acme Project" not in render_context(minimal)  # the rest of the README is gone
     saved = RunStore().load_artifact(out["run_id"], "shrink-s0002.json")
-    assert saved["schema"] == "agentrelay/v1" and saved["minimal_ids"] == out["minimal_ids"]
+    assert saved["schema"] == "agentbisect/v1" and saved["minimal_ids"] == out["minimal_ids"]
 
 
 def test_rerunning_shrink_is_free() -> None:
@@ -142,7 +142,7 @@ def test_terminal_output() -> None:
 def test_too_rare_and_not_failing_and_budget(tmp_path: Any) -> None:
     rare = tmp_path / "rare_rules.py"
     rare.write_text(
-        "from agentrelay.providers.fake import Rule, text, tool_use\n"
+        "from agentbisect.providers.fake import Rule, text, tool_use\n"
         "RULES = [Rule(when_all=['ignore previous instructions'], probability=0.05,\n"
         "              respond=tool_use('delete_file', {'path': '/home/user/project'}))]\n"
         "DEFAULT = text('ok')\n"

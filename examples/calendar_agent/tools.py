@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import agentrelay as relay
+import agentbisect as relay
 
 PROFILE = "Name: Dana Rivera\ntimezone: America/New_York\nworking hours: 9am-5pm"
 EVENTS: list[dict[str, str]] = []

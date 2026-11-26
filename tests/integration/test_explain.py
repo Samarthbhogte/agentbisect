@@ -14,10 +14,10 @@ from examples.file_cleanup_agent.agent import main as cleanup_main
 from examples.refund_agent.agent import main as refund_main
 from typer.testing import CliRunner
 
-from agentrelay.algo.explain import explain
-from agentrelay.algo.shrink import shrink
-from agentrelay.cli import app
-from agentrelay.providers.base import (
+from agentbisect.algo.explain import explain
+from agentbisect.algo.shrink import shrink
+from agentbisect.cli import app
+from agentbisect.providers.base import (
     ContentBlock,
     LLMRequest,
     LLMResponse,
@@ -25,11 +25,11 @@ from agentrelay.providers.base import (
     ToolSpec,
     text_block,
 )
-from agentrelay.providers.fake import FakeLLM, Rule, text, tool_use
-from agentrelay.report.html import render_report
-from agentrelay.schema import Failure
-from agentrelay.stats.runner import Budget, TrialRunner
-from agentrelay.store import RunStore
+from agentbisect.providers.fake import FakeLLM, Rule, text, tool_use
+from agentbisect.report.html import render_report
+from agentbisect.schema import Failure
+from agentbisect.stats.runner import Budget, TrialRunner
+from agentbisect.store import RunStore
 
 runner = CliRunner()
 
@@ -304,7 +304,7 @@ def test_terminal_output_and_errors() -> None:
     )
     assert result.exit_code == 0, result.output
     for text_ in (
-        "AgentRelay explain",
+        "AgentBisect explain",
         "Baseline failure rate",
         "Minimal repro",
         "CULPRIT",

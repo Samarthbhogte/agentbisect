@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any
 
-import agentrelay as relay
+import agentbisect as relay
 
 from .._common import DEFAULT_MODEL, cli, make_client, run_agent
 from .fake_rules import DEFAULT, RULES

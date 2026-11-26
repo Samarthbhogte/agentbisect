@@ -1,10 +1,10 @@
-# AgentRelay — Build Blueprint
+# AgentBisect — Build Blueprint
 
 > **git bisect + delta debugging for AI agents.**
-> AgentRelay takes a failed agent run, finds *which step and which piece of context* caused the failure,
+> AgentBisect takes a failed agent run, finds *which step and which piece of context* caused the failure,
 > shrinks it to the smallest reproducible case, and emits a regression test that fails until the bug is fixed.
 
-This document is the single source of truth for building AgentRelay. It is written so that an AI coding
+This document is the single source of truth for building AgentBisect. It is written so that an AI coding
 agent can implement it milestone by milestone. Every milestone has **acceptance criteria**:
 the milestone is not done until each one passes.
 
@@ -53,7 +53,7 @@ Today they open a tracing UI (LangSmith, Langfuse, Phoenix), scroll through 80+ 
 Existing open-source replay tools (Rewind, Agent VCR, agent-replay) let you *re-run and fork* a trace,
 but a human still has to find the cause.
 
-**AgentRelay answers these questions automatically:**
+**AgentBisect answers these questions automatically:**
 
 | Question | Command | Technique |
 |---|---|---|
@@ -92,13 +92,13 @@ but a human still has to find the cause.
           └────────────────┬───────────────────────────────────────────┬──────────────┘
                            │ LLM calls                                 │ tool calls
                 ┌──────────▼───────────────────────────────────────────▼──────────┐
-                │                    Capture SDK (agentrelay.sdk)                  │
+                │                    Capture SDK (agentbisect.sdk)                  │
                 │   normalizes requests/responses, links dependencies,            │
                 │   redacts secrets, appends steps                                │
                 └────────────────────────────────┬────────────────────────────────┘
                                                  │
                 ┌────────────────────────────────▼────────────────────────────────┐
-                │  Storage (.agentrelay/)   runs/*.jsonl   blobs/   index.db       │
+                │  Storage (.agentbisect/)   runs/*.jsonl   blobs/   index.db       │
                 │                           cache.db (trial results)               │
                 └──────┬─────────────────┬─────────────────┬─────────────────┬────┘
                        │                 │                 │                 │
@@ -118,7 +118,7 @@ but a human still has to find the cause.
                        └─────────────────┼─────────────────┘
                                   ┌──────▼──────┐
                                   │ Reports +   │──► report.html, terminal, JSON
-                                  │ Test emitter│──► tests/agentrelay/test_*.py
+                                  │ Test emitter│──► tests/agentbisect/test_*.py
                                   └─────────────┘
 ```
 
@@ -143,7 +143,7 @@ control user programs. Program-level comes in M7.
 - Python 3.11+, managed with `uv`
 - `pydantic` v2 (schema), `typer` (CLI), `rich` (terminal output), `jinja2` (HTML report)
 - `sqlite3` (stdlib) for index and cache; JSONL for traces
-- `anthropic` and `openai` SDKs as **optional extras** (`pip install agentrelay[anthropic]`)
+- `anthropic` and `openai` SDKs as **optional extras** (`pip install agentbisect[anthropic]`)
 - `pytest`, `pytest-asyncio`, `hypothesis`, `pytest-socket` (block network in tests), `coverage`
 - `ruff` (lint + format), `mypy --strict` on `algo/`, `stats/`, `context/`, `schema.py`
 - `asyncio` for concurrent trials
@@ -151,16 +151,16 @@ control user programs. Program-level comes in M7.
 **Repo layout**
 
 ```
-agentrelay/
+agentbisect/
 ├── pyproject.toml
 ├── README.md
 ├── BLUEPRINT.md
 ├── PROGRESS.md                  # milestone checklist, updated by the builder
 ├── LICENSE                      # Apache-2.0
-├── src/agentrelay/
+├── src/agentbisect/
 │   ├── __init__.py              # public API: wrap, tool, run, entrypoint, oracle, Failure
 │   ├── schema.py                # Run, Step, ContextUnit, Failure, RateEstimate (pydantic)
-│   ├── config.py                # agentrelay.toml loading
+│   ├── config.py                # agentbisect.toml loading
 │   ├── sdk/
 │   │   ├── context.py           # current run (contextvars), run() context manager
 │   │   ├── wrap_anthropic.py    # proxy for Anthropic client
@@ -222,15 +222,15 @@ agentrelay/
 ├── docs/
 └── .github/workflows/
     ├── ci.yml
-    └── agentrelay-action.yml    # reusable action for users
+    └── agentbisect-action.yml    # reusable action for users
 ```
 
 ---
 
 ## 5. Data model (trace schema)
 
-All models live in `src/agentrelay/schema.py`. Every stored file carries
-`"schema": "agentrelay/v1"`.
+All models live in `src/agentbisect/schema.py`. Every stored file carries
+`"schema": "agentbisect/v1"`.
 
 ```python
 class ErrorInfo(BaseModel):
@@ -259,7 +259,7 @@ class Step(BaseModel):
     tags: dict[str, str] = {}
 
 class Run(BaseModel):
-    schema_: str = Field("agentrelay/v1", alias="schema")
+    schema_: str = Field("agentbisect/v1", alias="schema")
     id: str                       # ULID, sortable by time
     name: str
     entrypoint: str | None        # "examples.file_cleanup_agent.agent:main" for program replay
@@ -269,7 +269,7 @@ class Run(BaseModel):
     steps: list[Step]
     started_at: datetime
     ended_at: datetime | None
-    env: dict[str, str]           # python version, agentrelay version, git sha
+    env: dict[str, str]           # python version, agentbisect version, git sha
     labels: dict[str, str] = {}   # user-supplied, e.g. {"failure": "deleted wrong file"}
 ```
 
@@ -317,7 +317,7 @@ class LLMResponse(BaseModel):
 **Storage format**
 
 ```
-.agentrelay/
+.agentbisect/
 ├── runs/<run_id>/
 │   ├── run.json          # Run without steps
 │   ├── steps.jsonl       # one Step per line, appended as they happen (crash-safe)
@@ -333,10 +333,10 @@ class LLMResponse(BaseModel):
 
 ### 6.1 Capture SDK
 
-Public API (`agentrelay/__init__.py`):
+Public API (`agentbisect/__init__.py`):
 
 ```python
-import agentrelay as relay
+import agentbisect as relay
 
 client = relay.wrap(anthropic.Anthropic())      # or openai.OpenAI(); returns a proxy
 
@@ -367,16 +367,16 @@ Requirements:
   `tool_result` block of its messages. Fallback: hash each earlier tool output; if its text appears
   verbatim in the request, link it.
 - Redaction (`redact.py`) runs before anything is written. See section 10.
-- `AGENTRELAY_DISABLED=1` turns the SDK into a no-op.
-- `relay record -- python my_agent.py` sets `AGENTRELAY_RUN_NAME` and prints the run id at exit.
+- `AGENTBISECT_DISABLED=1` turns the SDK into a no-op.
+- `relay record -- python my_agent.py` sets `AGENTBISECT_RUN_NAME` and prints the run id at exit.
 
 ### 6.2 Storage
 
 - Append-only JSONL write per step with `flush()` so crashed runs keep their steps.
 - `RunStore.load(run_id)`, `RunStore.list(filter)`, `RunStore.save_artifact(run_id, name, obj)`.
 - Run ids are ULIDs. The CLI accepts unique prefixes (`relay show 01JF3`) and `last`.
-- `.agentrelay/` location: nearest parent directory containing `.agentrelay/` or `pyproject.toml`,
-  overridable with `AGENTRELAY_HOME`.
+- `.agentbisect/` location: nearest parent directory containing `.agentbisect/` or `pyproject.toml`,
+  overridable with `AGENTBISECT_HOME`.
 
 ### 6.3 Providers and FakeLLM
 
@@ -388,7 +388,7 @@ class LLMProvider(Protocol):
 ```
 
 - `AnthropicProvider`, `OpenAIProvider` translate normalized request ↔ native format.
-  Examples take the model id from `--model` or `AGENTRELAY_MODEL`. Core logic never hardcodes a model; it always
+  Examples take the model id from `--model` or `AGENTBISECT_MODEL`. Core logic never hardcodes a model; it always
   comes from the recorded step or a CLI flag. Prices live in one table in `providers/pricing.py`.
 - **`FakeLLM` is critical.** It makes the whole system testable offline and in CI, and it powers
   RelayBench. It supports:
@@ -449,7 +449,7 @@ cost, latency, and token deltas.
 ### 6.5 Oracles
 
 ```python
-from agentrelay import oracle, Failure
+from agentbisect import oracle, Failure
 
 @oracle("deletes-outside-tmp", level="decision")
 def deletes_outside_tmp(resp: LLMResponse) -> Failure | None:
@@ -464,7 +464,7 @@ def wrong_refund(run: Run) -> Failure | None: ...
 
 - Two levels: `decision` (judges one `LLMResponse`) and `run` (judges a whole `Run`).
 - Loaded from the CLI as `--oracle path/to/oracles.py:deletes_outside_tmp`, or by registered name
-  from `agentrelay.toml`.
+  from `agentbisect.toml`.
 - Built-ins:
   - `tool_called(name, where=lambda args: ...)`
   - `output_matches(regex)` / `output_not_matches(regex)`
@@ -535,7 +535,7 @@ Rules:
 - **Structural constraints (`constraints.py`):**
   - An assistant `tool_use` block and its matching `tool_result` form one group: removing one removes
     both. Otherwise providers reject the request.
-  - Removing only a tool result's *content* keeps the block with `"[omitted by agentrelay]"`
+  - Removing only a tool result's *content* keeps the block with `"[omitted by agentbisect]"`
     (`--removal=placeholder`, default) or deletes the pair (`--removal=delete`).
   - After recomposition, merge consecutive same-role messages; the conversation must start with
     `user` and alternate as the provider requires.
@@ -597,7 +597,7 @@ within `M` (when `|M| <= 6`) and report an **interaction**: "failure needs A and
 Example terminal output:
 
 ```
-AgentRelay explain — run 01JF3K… step s0023 (model-x)
+AgentBisect explain — run 01JF3K… step s0023 (model-x)
 Oracle: deletes-outside-tmp   fingerprint: delete_file:outside_tmp
 
 Baseline failure rate      78%  [64%–88%]   (n=20)
@@ -636,7 +636,7 @@ replaying steps `< k` from the cassette and continuing live fails at a high rate
 `relay emit-test <run> --step s0023` writes:
 
 ```
-tests/agentrelay/
+tests/agentbisect/
 ├── scenarios/01JF3K_s0023_delete_outside_tmp.json   # minimal request, oracle ref, thresholds, baseline
 └── test_01JF3K_s0023_delete_outside_tmp.py
 ```
@@ -645,9 +645,9 @@ Generated test (`emit/templates/test_scenario.py.j2`):
 
 ```python
 import pytest
-from agentrelay.testing import run_scenario
+from agentbisect.testing import run_scenario
 
-@pytest.mark.agentrelay
+@pytest.mark.agentbisect
 def test_delete_outside_tmp_regression():
     result = run_scenario("scenarios/01JF3K_s0023_delete_outside_tmp.json",
                           trials=10, max_failure_rate=0.1)
@@ -655,17 +655,17 @@ def test_delete_outside_tmp_regression():
 ```
 
 - `run_scenario` can swap in the **current** system prompt and tool specs, configured in
-  `agentrelay.toml` (`system_prompt = "myagent.prompts:SYSTEM"`). That is what makes the test
+  `agentbisect.toml` (`system_prompt = "myagent.prompts:SYSTEM"`). That is what makes the test
   meaningful after a fix. Without it, it replays the recorded request (useful when upgrading models).
-- Skips cleanly with a reason when no API key is present, unless `AGENTRELAY_REQUIRE_LIVE=1`.
-  Supports `AGENTRELAY_PROVIDER=fake` with a rules file for offline CI.
+- Skips cleanly with a reason when no API key is present, unless `AGENTBISECT_REQUIRE_LIVE=1`.
+  Supports `AGENTBISECT_PROVIDER=fake` with a rules file for offline CI.
 - Before the fix the test fails (proves it reproduces); after the fix it passes.
 
-**`relay ci`**: runs all scenarios, prints a summary table, writes `agentrelay-report.json` and a
+**`relay ci`**: runs all scenarios, prints a summary table, writes `agentbisect-report.json` and a
 Markdown summary to `$GITHUB_STEP_SUMMARY` when set, exits non-zero on any regression.
 
-**GitHub Action (`agentrelay-action.yml`)**: inputs `scenarios-path`, `max-cost`, `trials`,
-`provider`; caches `.agentrelay/cache.db` with `actions/cache` keyed by scenario file hashes.
+**GitHub Action (`agentbisect-action.yml`)**: inputs `scenarios-path`, `max-cost`, `trials`,
+`provider`; caches `.agentbisect/cache.db` with `actions/cache` keyed by scenario file hashes.
 
 ### 6.12 Reports
 
@@ -679,7 +679,7 @@ Markdown summary to `$GITHUB_STEP_SUMMARY` when set, exits non-zero on any regre
 ### 6.13 CLI
 
 ```
-relay init                               Create agentrelay.toml, add .agentrelay/ to .gitignore
+relay init                               Create agentbisect.toml, add .agentbisect/ to .gitignore
 relay record -- <cmd...>                 Run a command with capture enabled
 relay ls [--status error] [--name X]     List runs
 relay show <run> [--step s0012]          Pretty-print a run or step
@@ -689,15 +689,15 @@ relay try <run> --step S [--model M] [--trials N]     Re-run one decision N time
 relay shrink <run> --step S --oracle FILE:NAME [--trials N] [--max-cost USD]
 relay explain <run> --step S --oracle FILE:NAME [--substitute UNIT=FILE] [--html]
 relay bisect <run> --oracle FILE:NAME [--tools cassette]
-relay emit-test <run> --step S [--out tests/agentrelay]
-relay ci [--path tests/agentrelay] [--max-cost USD]
+relay emit-test <run> --step S [--out tests/agentbisect]
+relay ci [--path tests/agentbisect] [--max-cost USD]
 relay import otel <file.json>            (stretch)
 relay doctor                             Check config, keys, store health
 ```
 
 Global flags: `--json`, `--provider anthropic|openai|fake`, `--fake-rules FILE`, `--max-cost`,
 `--concurrency`, `-v`. `--step` accepts `s0023`, `23`, or `auto` (the first LLM call whose response
-fails the oracle). `agentrelay.toml` supplies defaults.
+fails the oracle). `agentbisect.toml` supplies defaults.
 
 ---
 
@@ -748,7 +748,7 @@ Do not start a milestone until all acceptance criteria of the previous one pass.
 
 ### M0 — Scaffolding (½ day)
 - `uv` project, `src/` layout, `pyproject.toml` with extras `[anthropic]`, `[openai]`, `[dev]`,
-  console script `relay = "agentrelay.cli:app"`.
+  console script `relay = "agentbisect.cli:app"`.
 - `ruff`, `mypy`, `pytest` configured; `pytest-socket` blocks network by default.
 - `.github/workflows/ci.yml` runs lint, type check, and tests on Python 3.11 and 3.12.
 - `PROGRESS.md` with every milestone as a checklist.
@@ -802,7 +802,7 @@ Do not start a milestone until all acceptance criteria of the previous one pass.
     `url(http` in the template output).
 
 ### M6 — Test emitter and CI (1–2 days)
-- `emit/`, `agentrelay.testing.run_scenario`, current-prompt override, `relay ci`, GitHub Action.
+- `emit/`, `agentbisect.testing.run_scenario`, current-prompt override, `relay ci`, GitHub Action.
 - **Accept:**
   - For file_cleanup with FakeLLM: the emitted test fails against the buggy prompt and passes after
     applying the documented fix (the `unless_any` rule models the fix).
@@ -827,7 +827,7 @@ Do not start a milestone until all acceptance criteria of the previous one pass.
   to first diagnosis in under 5 minutes with no API key (FakeLLM example), architecture summary,
   bench results, limitations.
 - `docs/`: concepts, writing oracles, CI guide, limitations and determinism caveats.
-- Prepare PyPI publishing (check the `agentrelay` name; fallback `agent-relay`). Do not publish
+- Prepare PyPI publishing (check the `agentbisect` name; fallback `agentbisect`). Do not publish
   without the owner's go-ahead.
 
 ### Stretch (after v1)
@@ -859,11 +859,11 @@ Do not start a milestone until all acceptance criteria of the previous one pass.
   provider during trials.
 - **Redaction before write:** API-key patterns (Anthropic, OpenAI, AWS, GitHub, Slack, generic
   `Bearer` tokens), optional emails and phone numbers (`redact_pii = true`), and user regexes from
-  `agentrelay.toml`. Redacted values become `[REDACTED:<type>:<short hash>]` so equality survives.
+  `agentbisect.toml`. Redacted values become `[REDACTED:<type>:<short hash>]` so equality survives.
 - **HTTP headers are never recorded** (they carry API keys).
 - **Replay safety:** tools marked `side_effects=True` never run live in replay or bisect unless
   explicitly allowed.
-- `relay init` adds `.agentrelay/` to `.gitignore`. Emitted scenarios contain only the minimal
+- `relay init` adds `.agentbisect/` to `.gitignore`. Emitted scenarios contain only the minimal
   context, and the emitter warns if it still matches redaction patterns.
 
 ---
@@ -874,14 +874,14 @@ Do not start a milestone until all acceptance criteria of the previous one pass.
 1. Blog post: "I built git bisect for AI agents" — the problem, the ddmin idea, bench numbers, one
    real diagnosis with screenshots.
 2. Show HN with the demo. Share in r/LocalLLaMA, r/Python, agent-framework Discords, X and LinkedIn.
-3. Offer AgentRelay examples to two popular open-source agent repos (open an issue first).
+3. Offer AgentBisect examples to two popular open-source agent repos (open an issue first).
 4. Talk to 10 teams shipping agents; log their failure types; build the top requests.
 
 **Metrics:** GitHub stars, PyPI downloads, external issues and PRs, teams running `relay ci`,
 RelayBench numbers.
 
 **Resume bullets (fill in real numbers):**
-- Built AgentRelay, an open-source debugger that automatically root-causes AI agent failures with
+- Built AgentBisect, an open-source debugger that automatically root-causes AI agent failures with
   probabilistic delta debugging; finds the culprit context with **X% top-1 accuracy** on a 30-case
   benchmark using **Y% fewer model calls** than leave-one-out ablation.
 - Designed a nondeterminism-aware oracle using sequential Wilson-interval tests and a
@@ -900,7 +900,7 @@ key design; crash-safe append-only storage; the limits of replay determinism.
 | Stage | What | Signal to move on |
 |---|---|---|
 | Open source | CLI, SDK, GitHub Action (Apache-2.0) | 1k+ stars, teams running `relay ci` |
-| Hosted ("AgentRelay Cloud") | Production failures auto-triaged into minimal repros and draft fix PRs; shared reports; team history; long-term trace storage | 5 teams willing to pay |
+| Hosted ("AgentBisect Cloud") | Production failures auto-triaged into minimal repros and draft fix PRs; shared reports; team history; long-term trace storage | 5 teams willing to pay |
 | Enterprise | SSO, on-prem, audit logs as evidence for AI governance (EU AI Act, SOC 2) | First security or compliance buyer |
 | Exit options | Observability and tracing vendors, AI platforms, CI vendors | — |
 

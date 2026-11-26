@@ -1,6 +1,6 @@
 # Example agents
 
-Three small agents built on the Anthropic SDK and wrapped with AgentRelay. Each has a planted bug,
+Three small agents built on the Anthropic SDK and wrapped with AgentBisect. Each has a planted bug,
 and each runs fully offline with `--provider fake`, which answers through FakeLLM rules
 (`fake_rules.py`) instead of a real model. Run them from the repository root.
 
@@ -12,5 +12,5 @@ and each runs fully offline with `--provider fake`, which answers through FakeLL
 
 Every example takes `--seed N` (which FakeLLM sample to draw) and `--fixed` (apply the documented
 fix). To run against a real model, use `--provider anthropic` with `ANTHROPIC_API_KEY` set and
-pick the model with `--model <model id>` or the `AGENTRELAY_MODEL` environment variable. With
+pick the model with `--model <model id>` or the `AGENTBISECT_MODEL` environment variable. With
 `--provider fake` the model name doesn't matter.

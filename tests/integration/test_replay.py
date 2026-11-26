@@ -16,11 +16,11 @@ from examples.file_cleanup_agent.agent import main as cleanup_main
 from examples.refund_agent.agent import main as refund_main
 from typer.testing import CliRunner
 
-from agentrelay.cli import app
-from agentrelay.providers.fake import FakeLLM
-from agentrelay.replay.diff import diff_runs
-from agentrelay.replay.program import ReplayError, replay_program
-from agentrelay.store import RunStore
+from agentbisect.cli import app
+from agentbisect.providers.fake import FakeLLM
+from agentbisect.replay.diff import diff_runs
+from agentbisect.replay.program import ReplayError, replay_program
+from agentbisect.store import RunStore
 
 runner = CliRunner()
 
@@ -150,9 +150,9 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
-import agentrelay as relay
-from agentrelay.providers.fake import FakeLLM, Rule, text, tool_use
-from agentrelay.providers.fake_http import fake_anthropic_client
+import agentbisect as relay
+from agentbisect.providers.fake import FakeLLM, Rule, text, tool_use
+from agentbisect.providers.fake_http import fake_anthropic_client
 
 SENTINEL = Path(__file__).with_name("sentinel.txt")
 RULES = [Rule(when_all=["note"], unless_any=["Wrote"],

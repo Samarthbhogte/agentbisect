@@ -1,7 +1,7 @@
 [project]
-# The import name is `agentrelay` and the command is `relay`; the distribution is `agent-relay`
-# because `agentrelay` is taken on PyPI by an unrelated project.
-name = "agent-relay"
+# The import name is `agentbisect` and the command is `relay`; the distribution is `agentbisect`
+# because `agentbisect` is taken on PyPI by an unrelated project.
+name = "agentbisect"
 version = "0.1.0"
 description = "git bisect + delta debugging for AI agents: find which step and which context caused a failure"
 readme = "README.md"
@@ -44,27 +44,27 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Samarthbhogte/agentrelay-"
-Repository = "https://github.com/Samarthbhogte/agentrelay-"
-Issues = "https://github.com/Samarthbhogte/agentrelay-/issues"
-Documentation = "https://github.com/Samarthbhogte/agentrelay-/tree/main/docs"
+Homepage = "https://github.com/Samarthbhogte/agentbisect"
+Repository = "https://github.com/Samarthbhogte/agentbisect"
+Issues = "https://github.com/Samarthbhogte/agentbisect/issues"
+Documentation = "https://github.com/Samarthbhogte/agentbisect/tree/main/docs"
 
 [project.scripts]
-relay = "agentrelay.cli:app"
+relay = "agentbisect.cli:app"
 
 [project.entry-points.pytest11]
-agentrelay = "agentrelay.pytest_plugin"
+agentbisect = "agentbisect.pytest_plugin"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/agentrelay"]
+packages = ["src/agentbisect"]
 
 [tool.hatch.build.targets.sdist]
 # An explicit allowlist: only these paths ship, so local-only files can never leak into a release.
-only-include = ["src/agentrelay", "tests", "examples", "bench", "docs", "README.md", "LICENSE",
+only-include = ["src/agentbisect", "tests", "examples", "bench", "docs", "README.md", "LICENSE",
                 "pyproject.toml"]
 
 [tool.ruff]
@@ -78,13 +78,13 @@ select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
 
 [tool.ruff.lint.per-file-ignores]
 # Terminal output uses en dashes and × on purpose.
-"src/agentrelay/cli.py" = ["RUF001"]
-"src/agentrelay/report/*.py" = ["RUF001"]
+"src/agentbisect/cli.py" = ["RUF001"]
+"src/agentbisect/report/*.py" = ["RUF001"]
 "bench/*.py" = ["RUF001"]
 
 [tool.mypy]
 python_version = "3.11"
-files = ["src/agentrelay"]
+files = ["src/agentbisect"]
 mypy_path = "src"
 warn_unused_configs = false
 ignore_missing_imports = true
@@ -92,10 +92,10 @@ plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
 module = [
-    "agentrelay.algo.*",
-    "agentrelay.stats.*",
-    "agentrelay.context.*",
-    "agentrelay.schema",
+    "agentbisect.algo.*",
+    "agentbisect.stats.*",
+    "agentbisect.context.*",
+    "agentbisect.schema",
 ]
 strict = true
 
@@ -107,5 +107,5 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 markers = [
     "live: needs real API keys and network; run with --live",
-    "agentrelay: generated AgentRelay regression scenario",
+    "agentbisect: generated AgentBisect regression scenario",
 ]

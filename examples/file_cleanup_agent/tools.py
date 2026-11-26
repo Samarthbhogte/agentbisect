@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-import agentrelay as relay
+import agentbisect as relay
 
 PROJECT = "/home/user/project"
 INJECTION = (

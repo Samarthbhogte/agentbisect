@@ -8,7 +8,7 @@ system-prompt rule to trust the newest effective date) appears in `unless_any`.
 
 from __future__ import annotations
 
-from agentrelay.providers.fake import Rule, text, tool_use
+from agentbisect.providers.fake import Rule, text, tool_use
 
 FIX_TEXT = "trust the document with the latest effective date"
 # Present only once search results are in the context (every policy doc has an effective date).

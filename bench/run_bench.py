@@ -1,15 +1,15 @@
-"""Run RelayBench: AgentRelay (shrink + explain) against two baselines, offline.
+"""Run RelayBench: AgentBisect (shrink + explain) against two baselines, offline.
 
     uv run python bench/run_bench.py              # all cases, rewrites bench/RESULTS.md
     uv run python bench/run_bench.py --cases 5    # quick look (does not rewrite RESULTS.md)
 
 Methods, all judged by the same oracle and charged in model calls (trial-cache misses):
 
-* agentrelay:      `shrink` (probabilistic ddmin) then `explain` (attribution), default settings.
+* agentbisect:      `shrink` (probabilistic ddmin) then `explain` (attribution), default settings.
 * leave-one-out:   baseline (20 trials), then remove each finest unit on its own and test it with
                    the same sequential rule ddmin uses (3-8 trials). No ddmin.
 * random-ablation: random subsets (each unit kept with probability 1/2, 4 trials each) until it
-                   has used as many model calls as agentrelay did on that case; units are ranked
+                   has used as many model calls as agentbisect did on that case; units are ranked
                    by how much keeping them raises the failure rate.
 """
 
@@ -31,16 +31,16 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT.parent / "src"))
 
-from agentrelay import __version__  # noqa: E402
-from agentrelay.algo.explain import ExplainConfig, _closure, explain  # noqa: E402
-from agentrelay.algo.shrink import shrink  # noqa: E402
-from agentrelay.context.units import decompose, explained_ids, recompose  # noqa: E402
-from agentrelay.providers.base import LLMRequest, LLMResponse  # noqa: E402
-from agentrelay.providers.fake import FakeLLM, Rule  # noqa: E402
-from agentrelay.schema import Failure  # noqa: E402
-from agentrelay.stats.estimate import default_threshold  # noqa: E402
-from agentrelay.stats.runner import Budget, TrialRunner  # noqa: E402
-from agentrelay.store.cache import TrialCache  # noqa: E402
+from agentbisect import __version__  # noqa: E402
+from agentbisect.algo.explain import ExplainConfig, _closure, explain  # noqa: E402
+from agentbisect.algo.shrink import shrink  # noqa: E402
+from agentbisect.context.units import decompose, explained_ids, recompose  # noqa: E402
+from agentbisect.providers.base import LLMRequest, LLMResponse  # noqa: E402
+from agentbisect.providers.fake import FakeLLM, Rule  # noqa: E402
+from agentbisect.schema import Failure  # noqa: E402
+from agentbisect.stats.estimate import default_threshold  # noqa: E402
+from agentbisect.stats.runner import Budget, TrialRunner  # noqa: E402
+from agentbisect.store.cache import TrialCache  # noqa: E402
 
 TARGETS = {"top1": 0.85, "median_shrink_ratio": 10.0, "fewer_trials_than_loo": 0.40}
 
@@ -83,8 +83,8 @@ def score(case: dict[str, Any], ranking: list[str], flagged: list[str]) -> dict[
     }
 
 
-async def run_agentrelay(case: dict[str, Any], req: LLMRequest, cache: Path) -> dict[str, Any]:
-    runner = make_runner(case, cache, "agentrelay")
+async def run_agentbisect(case: dict[str, Any], req: LLMRequest, cache: Path) -> dict[str, Any]:
+    runner = make_runner(case, cache, "agentbisect")
     shrunk = await shrink(req, runner=runner, fingerprint=case["fingerprint"])
     out: dict[str, Any] = {
         "status": shrunk.status,
@@ -193,7 +193,7 @@ def run_case(case: dict[str, Any]) -> dict[str, Any]:
     with tempfile.TemporaryDirectory() as tmp:
         cache = Path(tmp)
         started = time.perf_counter()
-        ar = asyncio.run(run_agentrelay(case, req, cache))
+        ar = asyncio.run(run_agentbisect(case, req, cache))
         loo = asyncio.run(run_leave_one_out(case, req, cache))
         rnd = asyncio.run(
             run_random_ablation(
@@ -211,7 +211,7 @@ def run_case(case: dict[str, Any]) -> dict[str, Any]:
         "probability": case["probability"],
         "ground_truth": case["ground_truth"],
         "culprit_kinds": case["culprit_kinds"],
-        "agentrelay": ar,
+        "agentbisect": ar,
         "loo": loo,
         "random": rnd,
         "seconds": round(time.perf_counter() - started, 2),
@@ -229,48 +229,48 @@ def aggregate(results: list[dict[str, Any]]) -> dict[str, Any]:
         return wrong / flagged if flagged else None
 
     big = [r for r in results if r["units"] > 30]
-    ar_big = sum(r["agentrelay"]["calls"] for r in big)
+    ar_big = sum(r["agentbisect"]["calls"] for r in big)
     loo_big = sum(r["loo"]["calls"] for r in big)
     ratios = [
-        r["agentrelay"]["shrink_ratio"]
+        r["agentbisect"]["shrink_ratio"]
         for r in results
-        if r["agentrelay"]["shrink_ratio"] is not None
+        if r["agentbisect"]["shrink_ratio"] is not None
     ]
     two = [r for r in results if r["interaction"]]
     return {
         "cases": len(results),
         "two_culprit_cases": len(two),
         "large_cases": len(big),
-        "top1": {m: rate(m, "top1") for m in ("agentrelay", "loo", "random")},
-        "top3": {m: rate(m, "top3") for m in ("agentrelay", "loo", "random")},
-        "false_culprit_rate": {m: false_rate(m) for m in ("agentrelay", "loo", "random")},
+        "top1": {m: rate(m, "top1") for m in ("agentbisect", "loo", "random")},
+        "top3": {m: rate(m, "top3") for m in ("agentbisect", "loo", "random")},
+        "false_culprit_rate": {m: false_rate(m) for m in ("agentbisect", "loo", "random")},
         "missed_culprit_rate": {
             m: sum(len(r[m]["missed"]) for r in results)
             / sum(len(r["ground_truth"]) for r in results)
-            for m in ("agentrelay", "loo", "random")
+            for m in ("agentbisect", "loo", "random")
         },
         "median_shrink_ratio": statistics.median(ratios) if ratios else None,
         "min_shrink_ratio": min(ratios) if ratios else None,
-        "interaction_accuracy": rate("agentrelay", "interaction_correct", two),
+        "interaction_accuracy": rate("agentbisect", "interaction_correct", two),
         "calls_mean": {
             m: statistics.fmean(r[m]["calls"] for r in results)
-            for m in ("agentrelay", "loo", "random")
+            for m in ("agentbisect", "loo", "random")
         },
         "calls_median": {
             m: statistics.median(r[m]["calls"] for r in results)
-            for m in ("agentrelay", "loo", "random")
+            for m in ("agentbisect", "loo", "random")
         },
         "cost_mean": {
             m: statistics.fmean(r[m]["cost"] for r in results)
-            for m in ("agentrelay", "loo", "random")
+            for m in ("agentbisect", "loo", "random")
         },
         "fewer_trials_than_loo_large": 1 - ar_big / loo_big if loo_big else None,
         "per_case_savings_large": [
-            1 - r["agentrelay"]["calls"] / r["loo"]["calls"] for r in big if r["loo"]["calls"]
+            1 - r["agentbisect"]["calls"] / r["loo"]["calls"] for r in big if r["loo"]["calls"]
         ],
         "statuses": {
-            s: sum(r["agentrelay"]["status"] == s for r in results)
-            for s in {r["agentrelay"]["status"] for r in results}
+            s: sum(r["agentbisect"]["status"] == s for r in results)
+            for s in {r["agentbisect"]["status"] for r in results}
         },
     }
 
@@ -284,12 +284,12 @@ def check(ok: bool) -> str:
 
 
 def render(results: list[dict[str, Any]], agg: dict[str, Any], seconds: float) -> str:
-    top1, ratio = agg["top1"]["agentrelay"], agg["median_shrink_ratio"] or 0.0
+    top1, ratio = agg["top1"]["agentbisect"], agg["median_shrink_ratio"] or 0.0
     saving = agg["fewer_trials_than_loo_large"] or 0.0
     lines = [
         "# RelayBench results",
         "",
-        f"Generated by `bench/run_bench.py` on {datetime.now(UTC):%Y-%m-%d} with AgentRelay "
+        f"Generated by `bench/run_bench.py` on {datetime.now(UTC):%Y-%m-%d} with AgentBisect "
         f"{__version__}, Python {platform.python_version()}. {agg['cases']} cases, "
         f"{agg['two_culprit_cases']} with two culprits that must appear together; "
         f"{agg['large_cases']} have more than 30 units. Offline (FakeLLM); total runtime "
@@ -307,7 +307,7 @@ def render(results: list[dict[str, Any]], agg: dict[str, Any], seconds: float) -
         "",
         "## Methods compared",
         "",
-        "| | AgentRelay | Leave-one-out | Random ablation (same calls as AgentRelay) |",
+        "| | AgentBisect | Leave-one-out | Random ablation (same calls as AgentBisect) |",
         "|---|---|---|---|",
     ]
     for label, key, fmt in (
@@ -318,30 +318,30 @@ def render(results: list[dict[str, Any]], agg: dict[str, Any], seconds: float) -
     ):
         vals = agg[key]
         lines.append(
-            f"| {label} | {fmt(vals['agentrelay'])} | {fmt(vals['loo'])} | {fmt(vals['random'])} |"
+            f"| {label} | {fmt(vals['agentbisect'])} | {fmt(vals['loo'])} | {fmt(vals['random'])} |"
         )
     calls_mean, calls_med, cost = agg["calls_mean"], agg["calls_median"], agg["cost_mean"]
     lines += [
-        f"| Model calls per diagnosis (mean / median) | {calls_mean['agentrelay']:.0f} / "
-        f"{calls_med['agentrelay']:.0f} | {calls_mean['loo']:.0f} / {calls_med['loo']:.0f} | "
+        f"| Model calls per diagnosis (mean / median) | {calls_mean['agentbisect']:.0f} / "
+        f"{calls_med['agentbisect']:.0f} | {calls_mean['loo']:.0f} / {calls_med['loo']:.0f} | "
         f"{calls_mean['random']:.0f} / {calls_med['random']:.0f} |",
-        f"| Simulated cost per diagnosis | ${cost['agentrelay']:.4f} | ${cost['loo']:.4f} | "
+        f"| Simulated cost per diagnosis | ${cost['agentbisect']:.4f} | ${cost['loo']:.4f} | "
         f"${cost['random']:.4f} |",
         "",
-        f'Two-culprit cases where AgentRelay reported exactly the right "and" interaction: '
+        f'Two-culprit cases where AgentBisect reported exactly the right "and" interaction: '
         f"{pct(agg['interaction_accuracy'])} ({agg['two_culprit_cases']} cases). Median shrink "
-        f"ratio {ratio:.1f}× (minimum {agg['min_shrink_ratio']:.1f}×). AgentRelay statuses: "
+        f"ratio {ratio:.1f}× (minimum {agg['min_shrink_ratio']:.1f}×). AgentBisect statuses: "
         + ", ".join(f"{k} {v}" for k, v in sorted(agg["statuses"].items()))
         + ".",
         "",
         "## Per case",
         "",
-        "| Case | Units | p | Culprits | AgentRelay top-1 | Shrink | Calls (AR / LOO / random) "
+        "| Case | Units | p | Culprits | AgentBisect top-1 | Shrink | Calls (AR / LOO / random) "
         "| LOO top-1 | Random top-1 |",
         "|---|---|---|---|---|---|---|---|---|",
     ]
     for r in results:
-        ar, loo, rnd = r["agentrelay"], r["loo"], r["random"]
+        ar, loo, rnd = r["agentbisect"], r["loo"], r["random"]
         culprits = ", ".join(f"`{c}`" for c in r["ground_truth"])
         shrink_ratio = f"{ar['shrink_ratio']:.0f}×" if ar["shrink_ratio"] else "–"
         lines.append(
@@ -367,37 +367,37 @@ def render(results: list[dict[str, Any]], agg: dict[str, Any], seconds: float) -
 def findings(results: list[dict[str, Any]], agg: dict[str, Any]) -> list[str]:
     out = []
     top1, fcr = agg["top1"], agg["false_culprit_rate"]
-    if top1["random"] >= top1["agentrelay"]:
+    if top1["random"] >= top1["agentbisect"]:
         out.append(
             f"- **Top-1 accuracy does not separate the methods here.** Random ablation given the "
             f"same number of model calls also reaches {pct(top1['random'])} top-1 (leave-one-out "
             f"{pct(top1['loo'])}), because planted triggers make culprits crisp. The differences "
-            f"are in what each method *claims*: false culprit rate {pct(fcr['agentrelay'])} for "
-            f"AgentRelay vs {pct(fcr['loo'])} (leave-one-out) and {pct(fcr['random'])} (random), "
+            f"are in what each method *claims*: false culprit rate {pct(fcr['agentbisect'])} for "
+            f"AgentBisect vs {pct(fcr['loo'])} (leave-one-out) and {pct(fcr['random'])} (random), "
             f"and in cost."
         )
-    unflagged = [r for r in results if r["agentrelay"]["status"] == "no_culprit"]
+    unflagged = [r for r in results if r["agentbisect"]["status"] == "no_culprit"]
     if unflagged:
         names = ", ".join(f"{r['id']} (p={r['probability']:.2f})" for r in unflagged)
         settled = [
             r
             for r in unflagged
-            if set(r["agentrelay"].get("with_more_trials", {}).get("flagged", []))
+            if set(r["agentbisect"].get("with_more_trials", {}).get("flagged", []))
             == set(r["ground_truth"])
         ]
         out.append(
             f"- **Missed culprits are confidence, not ranking.** In {len(unflagged)} case(s), "
-            f"{names}, AgentRelay ranked the true culprit first but did not flag it: with a low "
+            f"{names}, AgentBisect ranked the true culprit first but did not flag it: with a low "
             "failure rate, the 95% intervals of the baseline (20 trials) and the ablation (16 "
             "trials) overlapped, and explain only flags non-overlapping intervals. Re-running "
             f"explain with doubled trials (40 / 32) flagged exactly the right unit in "
             f"{len(settled)} of {len(unflagged)} (extra calls not counted above)."
         )
     small = [r for r in results if r["units"] <= 30]
-    if small and any(r["agentrelay"]["calls"] > r["loo"]["calls"] for r in small):
+    if small and any(r["agentbisect"]["calls"] > r["loo"]["calls"] for r in small):
         out.append(
             f"- **On small contexts leave-one-out can be cheaper.** For the {len(small)} cases "
-            "with 30 units or fewer, testing every unit costs about as much as AgentRelay's "
+            "with 30 units or fewer, testing every unit costs about as much as AgentBisect's "
             "fixed overhead (baseline, confirmation, attribution), which is why the trials "
             "target only covers cases with more than 30 units."
         )
@@ -415,8 +415,8 @@ NOTES = [
     "- **Cost** is model calls that missed the per-method trial cache (repeated questions are "
     "free, as they are for users). Simulated dollars use FakeLLM's $1/$5 per million tokens.",
     "- **Leave-one-out** uses the same baseline (20 trials) and the same sequential test (3-8 "
-    "trials) as AgentRelay's search, so the comparison isolates ddmin + targeted attribution "
-    "against testing every unit. **Random ablation** gets exactly AgentRelay's call budget per "
+    "trials) as AgentBisect's search, so the comparison isolates ddmin + targeted attribution "
+    "against testing every unit. **Random ablation** gets exactly AgentBisect's call budget per "
     "case and ranks units by the difference in failure rate when kept versus dropped.",
     "- Reproduce: `uv run python bench/generate.py && uv run python bench/run_bench.py`.",
 ]
@@ -433,9 +433,9 @@ def main() -> None:
     results = []
     for case in cases:
         r = run_case(case)
-        ar = r["agentrelay"]
+        ar = r["agentbisect"]
         print(
-            f"{r['id']}: units {r['units']:>2}  agentrelay top1={ar['top1']!s:<5} "
+            f"{r['id']}: units {r['units']:>2}  agentbisect top1={ar['top1']!s:<5} "
             f"calls={ar['calls']:>4}  loo calls={r['loo']['calls']:>4}  "
             f"random top1={r['random']['top1']!s:<5} ({r['seconds']:.1f}s)",
             flush=True,

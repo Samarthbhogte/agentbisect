@@ -9,8 +9,8 @@ import pytest
 from examples.file_cleanup_agent.agent import main as cleanup_main
 from typer.testing import CliRunner
 
-from agentrelay.cli import app
-from agentrelay.providers.fake import FakeLLM
+from agentbisect.cli import app
+from agentbisect.providers.fake import FakeLLM
 
 runner = CliRunner()
 ORACLE = "examples/file_cleanup_agent/oracles.py:deletes_outside_tmp"

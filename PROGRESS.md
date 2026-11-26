@@ -1,4 +1,4 @@
-# AgentRelay — Progress
+# AgentBisect — Progress
 
 Milestones from BLUEPRINT.md section 8. A milestone is ticked only when every acceptance
 criterion passes.
@@ -63,11 +63,11 @@ criterion passes.
 - Coverage: algo 94–100%, context 98–100%, report 92–99% (97% combined).
 
 ## M6 — Test emitter and CI
-- [x] `emit/`, `agentrelay.testing.run_scenario`, current-prompt override, `relay emit-test`,
-  `relay ci`, reusable workflow `.github/workflows/agentrelay-action.yml`, pytest marker plugin
+- [x] `emit/`, `agentbisect.testing.run_scenario`, current-prompt override, `relay emit-test`,
+  `relay ci`, reusable workflow `.github/workflows/agentbisect-action.yml`, pytest marker plugin
 - [x] Accept: the emitted file_cleanup test fails against the buggy prompt (7/10 > 10%) and passes
   after applying the documented fix, run through a real `pytest` process
-- [x] Accept: `relay ci` exits 1 on regression and 0 otherwise, writes `agentrelay-report.json`
+- [x] Accept: `relay ci` exits 1 on regression and 0 otherwise, writes `agentbisect-report.json`
   and appends a Markdown table to `$GITHUB_STEP_SUMMARY`
 - The repository's own CI runs the reusable workflow on a committed example regression test
   (`examples/file_cleanup_agent/regression/`), so the action is exercised on every push.
@@ -102,16 +102,16 @@ criterion passes.
 - [x] Quickstart verified verbatim on a fresh copy: 6 s with a warm uv cache, no API key; a CI job
   now runs it on every push
 - [x] `docs/`: concepts, writing oracles, CI guide, limitations and determinism caveats
-- [x] PyPI prep: `agentrelay` is taken on PyPI by an unrelated project, so the distribution is
-  `agent-relay` (import `agentrelay`, command `relay`). Metadata, URLs and classifiers set; wheel and
+- [x] PyPI prep: `agentbisect` is taken on PyPI by an unrelated project, so the distribution is
+  `agentbisect` (import `agentbisect`, command `relay`). Metadata, URLs and classifiers set; wheel and
   sdist build and pass `twine check`; a clean wheel install works. **Not published**: waiting for
   the owner's go-ahead.
 
 ## Decisions
 - M0: the repo root is this folder (it already held BLUEPRINT.md), not a nested
-  `agentrelay/` directory.
+  `agentbisect/` directory.
 - M0: dev Python pinned to 3.12 via `.python-version`; package supports `>=3.11`.
-- M0: mypy runs over all of `src/agentrelay`, with `strict = true` only for `algo`, `stats`,
+- M0: mypy runs over all of `src/agentbisect`, with `strict = true` only for `algo`, `stats`,
   `context`, and `schema` as the blueprint requires. `warn_unused_configs` is off so the strict
   override for not-yet-written modules doesn't produce noise.
 - M0: `--live` is a custom pytest option in `tests/conftest.py`; it selects only `live` tests and
@@ -127,7 +127,7 @@ criterion passes.
   `FakeScriptExhausted` when it runs out. It counts calls in `.calls` (for M3's zero-call check).
 - M1: FakeLLM prices default to $1 / $5 per million input / output tokens; tokens ≈ len(text)/4.
   `estimate_cost` charges `max_tokens` for output, so it is an upper bound.
-- M1: `steps.jsonl` starts with a header line `{"schema": "agentrelay/v1"}`; JSON artifacts get a
+- M1: `steps.jsonl` starts with a header line `{"schema": "agentbisect/v1"}`; JSON artifacts get a
   `schema` key; `run.json` has it via the `Run` alias. Text artifacts (HTML) carry no marker.
 - M1: a torn final line in `steps.jsonl` (crash mid-write) is skipped on load; a bad line anywhere
   else raises.
@@ -160,7 +160,7 @@ criterion passes.
   Its `tool_use_id` is stored in `tags["tool_use_id"]`, and `tags["side_effects"]` records the flag.
 - M2: the active run is found through a context variable, then a process-wide stack of active
   runs (so calls from worker threads still land in the run), then an implicit run named from
-  `AGENTRELAY_RUN_NAME` or the script name, finished at exit with status `unknown`.
+  `AGENTBISECT_RUN_NAME` or the script name, finished at exit with status `unknown`.
 - M2: `relay.run()` returns its recorder (`set_output()`, `label()`, `id`). `@relay.entrypoint`
   records `module:qualname` (resolving `__main__` for `python -m`) and, if the run set no output,
   stores the return value as `{"return": value}`.
@@ -190,7 +190,7 @@ criterion passes.
 - M3: retries: an explicit `retryable` flag on the error wins; otherwise HTTP 429 and 5xx are
   retried, up to 5 times with exponential backoff (0.5 s base) plus jitter. SDK errors are wrapped in
   `ProviderError`.
-- M3: `providers/pricing.py` only knows FakeLLM's price. Real prices go in `agentrelay.toml`
+- M3: `providers/pricing.py` only knows FakeLLM's price. Real prices go in `agentbisect.toml`
   `[prices]`; an unknown model is charged a deliberately high $15 / $75 per Mtok, so a budget can
   only be exceeded on the safe side. (I did not want to hardcode prices I couldn't verify.)
 - M3: `relay try` runs exactly `--trials` trials (no early stop) and reports the rate and Wilson
@@ -206,7 +206,7 @@ criterion passes.
   "what you deleted" in the system prompt, so the safe path never deleted the temp file). The
   example test now also checks the safe path.
 - Examples: no built-in model id. `--model` or
-  `AGENTRELAY_MODEL` sets it, and `--provider anthropic` without one is a clear usage error.
+  `AGENTBISECT_MODEL` sets it, and `--provider anthropic` without one is a clear usage error.
   Tests use `fake-model`. (Changing the model name changes FakeLLM's seeded draws, so the
   documented failing seeds are now 2 for file_cleanup, 7 for refund, and 1 for calendar.)
 - M4: never removable: the first user message and the last user message with text (the spec's
@@ -265,26 +265,26 @@ criterion passes.
   FakeLLM rules file used for the diagnosis. Shrink artifacts now record `oracle_ref`,
   `recorded_provider`, `provider` and `fake_rules` so this is possible.
 - M6: current-prompt overrides, in priority order: `run_scenario`/`relay ci` arguments, the
-  references stored at emit time (`--system-prompt`, `--tools`), then `agentrelay.toml`
+  references stored at emit time (`--system-prompt`, `--tools`), then `agentbisect.toml`
   (`system_prompt`, `tools`). The system override replaces the whole system prompt of the
   minimal request (that is where fixes usually go); the tools override replaces the tool specs.
-  `AGENTRELAY_MODEL` overrides the model. References resolve against the project root found
-  from the scenario file (nearest `agentrelay.toml`, else `pyproject.toml`).
-- M6: provider: `AGENTRELAY_PROVIDER`, else the provider the step was recorded with. Without its
+  `AGENTBISECT_MODEL` overrides the model. References resolve against the project root found
+  from the scenario file (nearest `agentbisect.toml`, else `pyproject.toml`).
+- M6: provider: `AGENTBISECT_PROVIDER`, else the provider the step was recorded with. Without its
   API key a test is skipped (`pytest.skip`, or "skipped" in `relay ci`), unless
-  `AGENTRELAY_REQUIRE_LIVE=1`, which makes it an error. With `fake`, `AGENTRELAY_FAKE_RULES` or
+  `AGENTBISECT_REQUIRE_LIVE=1`, which makes it an error. With `fake`, `AGENTBISECT_FAKE_RULES` or
   the stored rules file is used.
 - M6: a test passes when failures/trials ≤ `max_failure_rate` (defaults 10 trials, 10%). It runs
   all trials (no early stopping) and uses the project's trial cache, so unchanged scenarios cost
-  nothing on re-runs. Per-scenario budget: `AGENTRELAY_MAX_COST` (default $1); `relay ci
+  nothing on re-runs. Per-scenario budget: `AGENTBISECT_MAX_COST` (default $1); `relay ci
   --max-cost` is a total spread across scenarios.
 - M6: `relay emit-test` uses `explain-<step>.json` (its culprits) or `shrink-<step>.json`; with
   `--oracle` and no artifact it shrinks first. File names: `<run id[:6]>_<step>_<fingerprint
   slug>`. It refuses to overwrite without `--force`, and warns when the scenario still matches a
   redaction pattern.
 - M6: `relay ci` exit codes: 1 if any scenario regressed or errored, else 0 (skips don't fail).
-- M6: a `pytest11` entry point registers the `agentrelay` marker in projects that install
-  agentrelay, so emitted tests run without "unknown marker" warnings.
+- M6: a `pytest11` entry point registers the `agentbisect` marker in projects that install
+  agentbisect, so emitted tests run without "unknown marker" warnings.
 - M7: served LLM calls go through a copy of the user's client (`client.with_options(http_client=
   ...)`) whose in-memory HTTP layer returns the recorded provider-native response, re-encoded as
   server-sent events for streaming calls. The agent receives genuine SDK objects; live calls use
@@ -305,7 +305,7 @@ criterion passes.
   happens lazily during a replay, so it is not done. Limitations are in the module docstring.
 - M7: replays are recorded as new runs labeled `replay_of` / `replay_mode`; `last` now means the
   newest run that is not a replay. Bisect trials run with an in-memory store, so they don't fill
-  `.agentrelay/`.
+  `.agentbisect/`.
 - M7: bisect measures each fork point sequentially (min 3, max `--trials` 8 replays, threshold
   0.5, trial seeds 1..n), binary-searches the first k that still fails, and reports the curve,
   whether it is monotone, and the first LLM call at or after k to explain. Statuses: ok,
@@ -318,8 +318,8 @@ criterion passes.
   (`send_report`, p 0.3) so slippage is exercised. Ground truth = the finest units containing a
   trigger, checked by a test.
 - M8: every method is charged in model calls that miss a per-method trial cache. Leave-one-out
-  uses the same 20-trial baseline and 3–8-trial sequential test as AgentRelay's search; random
-  ablation gets AgentRelay's exact call budget per case (4 trials per random subset).
+  uses the same 20-trial baseline and 3–8-trial sequential test as AgentBisect's search; random
+  ablation gets AgentBisect's exact call budget per case (4 trials per random subset).
 - M8: top-1 = rank-1 unit is a culprit; top-3 = all culprits in the top 3; false culprit rate =
   wrongly flagged / all flagged; missed = culprits not flagged.
 - M8: `run_bench.py` rewrites `RESULTS.md` only on a full run (`--cases N` is a quick look) and
@@ -328,12 +328,12 @@ criterion passes.
   files, because the build backend honors `.gitignore` but not git's local exclude file; the
   allowlist makes that impossible. Nothing had been uploaded.
 - M9: package metadata lists the author's name only (no email), since PyPI shows it publicly.
-- M9: the other `agentrelay` distribution on PyPI probably also uses the import name `agentrelay`,
+- M9: the other `agentbisect` distribution on PyPI probably also uses the import name `agentbisect`,
   so installing both in one environment would conflict. Renaming the import package is possible
   before the first release if that matters.
 
 ## Known gaps
-- No real model prices are built in (see Decisions); set them in `agentrelay.toml`. Recorded
+- No real model prices are built in (see Decisions); set them in `agentbisect.toml`. Recorded
   `cost_usd` on captured steps is still `None`.
 - `judge()` calls are not cached or counted against the budget yet.
 - Live tests against real APIs (`tests/live/`) are not written yet; everything so far is verified

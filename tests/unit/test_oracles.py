@@ -6,12 +6,18 @@ from pathlib import Path
 
 import pytest
 
-from agentrelay import Failure, oracle
-from agentrelay.oracles.api import OracleError, acheck, check, load_oracle, registered
-from agentrelay.oracles.builtin import judge, loops, output_matches, output_not_matches, tool_called
-from agentrelay.providers.base import LLMResponse
-from agentrelay.providers.fake import FakeLLM, text, tool_use
-from agentrelay.schema import Run, Step, request_hash, step_id
+from agentbisect import Failure, oracle
+from agentbisect.oracles.api import OracleError, acheck, check, load_oracle, registered
+from agentbisect.oracles.builtin import (
+    judge,
+    loops,
+    output_matches,
+    output_not_matches,
+    tool_called,
+)
+from agentbisect.providers.base import LLMResponse
+from agentbisect.providers.fake import FakeLLM, text, tool_use
+from agentbisect.schema import Run, Step, request_hash, step_id
 
 DELETE_PROJECT = tool_use("delete_file", {"path": "/home/user/project"})
 DELETE_TMP = tool_use("delete_file", {"path": "/tmp/x"})

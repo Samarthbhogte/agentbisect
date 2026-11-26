@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from agentrelay import Failure, oracle
-from agentrelay.providers.base import LLMResponse
-from agentrelay.schema import Run
+from agentbisect import Failure, oracle
+from agentbisect.providers.base import LLMResponse
+from agentbisect.schema import Run
 
 
 @oracle("deletes-outside-tmp", level="decision")

@@ -1,5 +1,5 @@
 {
-  "schema": "agentrelay/v1",
+  "schema": "agentbisect/v1",
   "kind": "scenario",
   "name": "01M8AH_s0002_delete_file_outside_tmp",
   "run_id": "01M8AHCVD74Y9YWFHXCY3RZ68C",
@@ -133,5 +133,5 @@
   "system_prompt": "examples.file_cleanup_agent.agent:SYSTEM_FIXED",
   "tools": null,
   "created_at": "2026-11-25T23:42:43+00:00",
-  "agentrelay": "0.1.0"
+  "agentbisect": "0.1.0"
 }

@@ -8,11 +8,11 @@ normalized request and response, timing, token counts, and `depends_on`: the ear
 outputs appear in its input. An LLM call depends on the tool calls whose results it sees; a tool
 call depends on the LLM call that requested it.
 
-Runs live in `.agentrelay/` (the nearest parent directory with `.agentrelay/` or
-`pyproject.toml`, or `$AGENTRELAY_HOME`):
+Runs live in `.agentbisect/` (the nearest parent directory with `.agentbisect/` or
+`pyproject.toml`, or `$AGENTBISECT_HOME`):
 
 ```
-.agentrelay/
+.agentbisect/
 ├── runs/<run id>/run.json        # the run without its steps
 ├── runs/<run id>/steps.jsonl     # one step per line, flushed as it happens (crash-safe)
 ├── runs/<run id>/artifacts/      # shrink-*.json, explain-*.json, bisect.json, report.html
@@ -23,7 +23,7 @@ Runs live in `.agentrelay/` (the nearest parent directory with `.agentrelay/` or
 
 Everything is **redacted before it is written**: API keys (Anthropic, OpenAI, AWS, GitHub, Slack,
 bearer tokens), optionally emails and phone numbers (`redact_pii = true`), and your own patterns
-from `agentrelay.toml`. A redacted value becomes `[REDACTED:<type>:<hash>]`, so equal secrets stay
+from `agentbisect.toml`. A redacted value becomes `[REDACTED:<type>:<hash>]`, so equal secrets stay
 equal. HTTP headers are never recorded.
 
 Run ids are ULIDs (sortable by time). Commands accept a full id, a unique prefix, or `last` (the
@@ -34,7 +34,7 @@ newest run that is not a replay).
 A **decision** is an LLM call whose output is judged. Internally every request and response uses a
 provider-neutral format (`LLMRequest`, `LLMResponse`: system prompt, messages of text, tool-use and
 tool-result blocks, tool specs). Adapters translate to and from the Anthropic Messages API and
-OpenAI's Chat Completions and Responses APIs; blocks AgentRelay doesn't model (images, thinking,
+OpenAI's Chat Completions and Responses APIs; blocks AgentBisect doesn't model (images, thinking,
 documents) are kept as is.
 
 ## Oracles and fingerprints
@@ -47,7 +47,7 @@ search from "shrinking" into a different, simpler bug. See [writing oracles](ora
 
 ## Failure rates, not booleans
 
-Models are nondeterministic, so "does this still fail?" is a rate. AgentRelay runs repeated
+Models are nondeterministic, so "does this still fail?" is a rate. AgentBisect runs repeated
 **trials** (trial *i* always uses sample index *i*, so results are cached and reproducible),
 computes a 95% **Wilson** interval, and stops early once the interval is clearly above or below the
 threshold. The default threshold is `max(0.2, p0 / 2)`: a candidate still fails if it fails at
@@ -56,7 +56,7 @@ this budget.
 
 Budgets: every command has `--max-cost` (default $2). Each trial's cost is estimated before it
 runs (charging the full `max_tokens` of output) and settled to the actual cost after. Set model
-prices in `agentrelay.toml` under `[prices]`.
+prices in `agentbisect.toml` under `[prices]`.
 
 ## Context units
 
@@ -67,7 +67,7 @@ prices in `agentrelay.toml` under `[prices]`.
 | `sys.2` | a system-prompt section (markdown heading, XML-style tag, or paragraph) | drops the section |
 | `tool.delete_file` | a tool's description | empties the description; the tool stays callable |
 | `msg.4` | a message (for user messages, its text) | drops it; neighbors with the same role merge |
-| `msg.4.tr.0` | a tool result | replaces its content with `[omitted by agentrelay]` (or, with `--removal delete`, removes the call and the result) |
+| `msg.4.tr.0` | a tool result | replaces its content with `[omitted by agentbisect]` (or, with `--removal delete`, removes the call and the result) |
 | `msg.4.tr.0.chunk.3` | a ~200-token chunk of a long tool result | drops that chunk |
 
 The first user message and the last user message with text (the task) are never removed. Every
@@ -79,7 +79,7 @@ come first. `recompose(request, all units) == request`.
 `relay shrink` runs delta debugging (Zeller & Hildebrandt's ddmin) over removable groups of units,
 first at the level of sections, messages, tool results and tool specs, then inside the surviving
 tool results at chunk level. Each question is asked once (memoized). The result is confirmed with
-16 trials; if it no longer fails, AgentRelay backs off to the last candidate that does and marks
+16 trials; if it no longer fails, AgentBisect backs off to the last candidate that does and marks
 the result unstable.
 
 ## Explain: attribution

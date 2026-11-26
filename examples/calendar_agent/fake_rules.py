@@ -7,7 +7,7 @@ user's local timezone, which suppresses the rule.
 
 from __future__ import annotations
 
-from agentrelay.providers.fake import Rule, text, tool_use
+from agentbisect.providers.fake import Rule, text, tool_use
 
 BUG_TEXT = "at the given time"
 FIX_TEXT = "user's local timezone"

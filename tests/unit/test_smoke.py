@@ -6,18 +6,18 @@ import pytest
 from pytest_socket import SocketBlockedError
 from typer.testing import CliRunner
 
-import agentrelay
-from agentrelay.cli import app
+import agentbisect
+from agentbisect.cli import app
 
 
 def test_version_string() -> None:
-    assert agentrelay.__version__ == "0.1.0"
+    assert agentbisect.__version__ == "0.1.0"
 
 
 def test_cli_version() -> None:
     result = CliRunner().invoke(app, ["--version"])
     assert result.exit_code == 0
-    assert "agentrelay 0.1.0" in result.stdout
+    assert "agentbisect 0.1.0" in result.stdout
 
 
 @pytest.mark.filterwarnings("ignore:A test tried to use socket")

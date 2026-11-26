@@ -1,1 +1,1 @@
-"""Example agents for AgentRelay. Each runs offline with `--provider fake`."""
+"""Example agents for AgentBisect. Each runs offline with `--provider fake`."""

@@ -1,0 +1,22 @@
+"""Regression test emitted by AgentBisect for run {{ run_id }}, step {{ step_id }}.
+
+Failure: {{ fingerprint }}
+Culprit context: {{ culprits | join(", ") }}
+
+It replays the minimal failing context {{ trials }} times and fails while the failure rate is above
+{{ "%.0f" | format(100 * max_failure_rate) }}%. It fails until the bug is fixed.
+"""
+
+import pytest
+
+from agentbisect.testing import run_scenario
+
+
+@pytest.mark.agentbisect
+def {{ func }}():
+    result = run_scenario(
+        "{{ scenario }}",
+        trials={{ trials }},
+        max_failure_rate={{ max_failure_rate }},
+    )
+    assert result.passed, result.summary()

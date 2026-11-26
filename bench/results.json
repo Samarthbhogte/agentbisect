@@ -4,22 +4,22 @@
   "two_culprit_cases": 8,
   "large_cases": 26,
   "top1": {
-   "agentrelay": 1.0,
+   "agentbisect": 1.0,
    "loo": 0.9333333333333333,
    "random": 1.0
   },
   "top3": {
-   "agentrelay": 1.0,
+   "agentbisect": 1.0,
    "loo": 1.0,
    "random": 1.0
   },
   "false_culprit_rate": {
-   "agentrelay": 0.0,
+   "agentbisect": 0.0,
    "loo": 0.6,
    "random": 0.4107142857142857
   },
   "missed_culprit_rate": {
-   "agentrelay": 0.05263157894736842,
+   "agentbisect": 0.05263157894736842,
    "loo": 0.0,
    "random": 0.13157894736842105
   },
@@ -27,17 +27,17 @@
   "min_shrink_ratio": 6.0,
   "interaction_accuracy": 1.0,
   "calls_mean": {
-   "agentrelay": 168.13333333333333,
+   "agentbisect": 168.13333333333333,
    "loo": 355.8666666666667,
    "random": 168.13333333333333
   },
   "calls_median": {
-   "agentrelay": 138.0,
+   "agentbisect": 138.0,
    "loo": 354.0,
    "random": 138.0
   },
   "cost_mean": {
-   "agentrelay": 0.4038018333333334,
+   "agentbisect": 0.4038018333333334,
    "loo": 2.0968158666666668,
    "random": 0.48309013333333334
   },
@@ -89,7 +89,7 @@
     "tool",
     "result"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 5323,
     "minimal_tokens": 180,
@@ -182,7 +182,7 @@
     "tool",
     "system"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 5036,
     "minimal_tokens": 244,
@@ -254,7 +254,7 @@
    "culprit_kinds": [
     "tool"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 3694,
     "minimal_tokens": 271,
@@ -331,7 +331,7 @@
    "culprit_kinds": [
     "tool"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 5486,
     "minimal_tokens": 141,
@@ -399,7 +399,7 @@
    "culprit_kinds": [
     "result"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 4602,
     "minimal_tokens": 217,
@@ -467,7 +467,7 @@
    "culprit_kinds": [
     "result"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 6980,
     "minimal_tokens": 308,
@@ -541,7 +541,7 @@
    "culprit_kinds": [
     "tool"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 7782,
     "minimal_tokens": 241,
@@ -611,7 +611,7 @@
     "result",
     "system"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 2920,
     "minimal_tokens": 233,
@@ -683,7 +683,7 @@
    "culprit_kinds": [
     "tool"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 1051,
     "minimal_tokens": 70,
@@ -761,7 +761,7 @@
    "culprit_kinds": [
     "result"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 3367,
     "minimal_tokens": 134,
@@ -831,7 +831,7 @@
     "tool",
     "system"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 7616,
     "minimal_tokens": 315,
@@ -904,7 +904,7 @@
    "culprit_kinds": [
     "system"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 4181,
     "minimal_tokens": 242,
@@ -978,7 +978,7 @@
    "culprit_kinds": [
     "result"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 5554,
     "minimal_tokens": 362,
@@ -1055,7 +1055,7 @@
    "culprit_kinds": [
     "tool"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "no_culprit",
     "original_tokens": 6904,
     "minimal_tokens": 204,
@@ -1141,7 +1141,7 @@
     "result",
     "tool"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 2603,
     "minimal_tokens": 289,
@@ -1216,7 +1216,7 @@
    "culprit_kinds": [
     "result"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 6536,
     "minimal_tokens": 264,
@@ -1295,7 +1295,7 @@
     "result",
     "system"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 7359,
     "minimal_tokens": 509,
@@ -1382,7 +1382,7 @@
     "system",
     "tool"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 4521,
     "minimal_tokens": 270,
@@ -1454,7 +1454,7 @@
    "culprit_kinds": [
     "tool"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 4716,
     "minimal_tokens": 172,
@@ -1535,7 +1535,7 @@
    "culprit_kinds": [
     "result"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 5114,
     "minimal_tokens": 139,
@@ -1603,7 +1603,7 @@
    "culprit_kinds": [
     "system"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 6960,
     "minimal_tokens": 312,
@@ -1676,7 +1676,7 @@
    "culprit_kinds": [
     "result"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "no_culprit",
     "original_tokens": 7486,
     "minimal_tokens": 285,
@@ -1764,7 +1764,7 @@
    "culprit_kinds": [
     "result"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 7264,
     "minimal_tokens": 251,
@@ -1848,7 +1848,7 @@
    "culprit_kinds": [
     "result"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 5552,
     "minimal_tokens": 270,
@@ -1921,7 +1921,7 @@
    "culprit_kinds": [
     "system"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 8426,
     "minimal_tokens": 235,
@@ -2002,7 +2002,7 @@
    "culprit_kinds": [
     "result"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 7137,
     "minimal_tokens": 279,
@@ -2083,7 +2083,7 @@
    "culprit_kinds": [
     "result"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 5492,
     "minimal_tokens": 320,
@@ -2160,7 +2160,7 @@
     "system",
     "result"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 6107,
     "minimal_tokens": 271,
@@ -2232,7 +2232,7 @@
    "culprit_kinds": [
     "result"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 1128,
     "minimal_tokens": 188,
@@ -2300,7 +2300,7 @@
    "culprit_kinds": [
     "result"
    ],
-   "agentrelay": {
+   "agentbisect": {
     "status": "ok",
     "original_tokens": 4718,
     "minimal_tokens": 160,

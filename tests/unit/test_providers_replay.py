@@ -4,27 +4,27 @@ from datetime import UTC, datetime
 
 import pytest
 
-from agentrelay.providers.anthropic import AnthropicProvider
-from agentrelay.providers.base import (
+from agentbisect.providers.anthropic import AnthropicProvider
+from agentbisect.providers.base import (
     LLMRequest,
     Message,
     ProviderError,
     ToolSpec,
     text_block,
 )
-from agentrelay.providers.fake import FakeLLM, Rule, text, tool_use
-from agentrelay.providers.fake_http import fake_anthropic_client, fake_openai_client
-from agentrelay.providers.openai import OpenAIProvider
-from agentrelay.providers.pricing import UNKNOWN_PRICE, estimate_cost, price_for
-from agentrelay.providers.registry import ProviderSetupError, make_provider
-from agentrelay.replay.decision import (
+from agentbisect.providers.fake import FakeLLM, Rule, text, tool_use
+from agentbisect.providers.fake_http import fake_anthropic_client, fake_openai_client
+from agentbisect.providers.openai import OpenAIProvider
+from agentbisect.providers.pricing import UNKNOWN_PRICE, estimate_cost, price_for
+from agentbisect.providers.registry import ProviderSetupError, make_provider
+from agentbisect.replay.decision import (
     NotAnLLMStep,
     RequestOverrides,
     build_request,
     find_step,
     replay_decision,
 )
-from agentrelay.schema import Run, Step, request_hash
+from agentbisect.schema import Run, Step, request_hash
 
 RULES = [Rule(when_all=["weather"], respond=tool_use("get_weather", {"city": "Paris"}))]
 REQ = LLMRequest(

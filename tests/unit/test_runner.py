@@ -5,12 +5,12 @@ from pathlib import Path
 
 import pytest
 
-from agentrelay.oracles.api import acheck, oracle
-from agentrelay.providers.base import LLMRequest, LLMResponse, Message, ProviderError, text_block
-from agentrelay.providers.fake import FakeLLM, Rule, text, tool_use
-from agentrelay.schema import Failure
-from agentrelay.stats.runner import Budget, TrialRunner
-from agentrelay.store.cache import TrialCache
+from agentbisect.oracles.api import acheck, oracle
+from agentbisect.providers.base import LLMRequest, LLMResponse, Message, ProviderError, text_block
+from agentbisect.providers.fake import FakeLLM, Rule, text, tool_use
+from agentbisect.schema import Failure
+from agentbisect.stats.runner import Budget, TrialRunner
+from agentbisect.store.cache import TrialCache
 
 DELETE = tool_use("delete_file", {"path": "/home/user/project"})
 LIST = tool_use("list_dir", {"path": "/"})
@@ -227,7 +227,7 @@ async def test_concurrency_limit_is_respected() -> None:
 
 
 def test_cache_keys_separate_rule_sets_models_and_temperatures(tmp_path: Path) -> None:
-    from agentrelay.store.cache import trial_cache_key
+    from agentbisect.store.cache import trial_cache_key
 
     a = FakeLLM(rules=[Rule(when_all=["x"], respond=DELETE)])
     b = FakeLLM(rules=[Rule(when_all=["x"], respond=DELETE, probability=0.5)])

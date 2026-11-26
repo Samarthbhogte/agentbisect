@@ -1,7 +1,7 @@
-# AgentRelay
+# AgentBisect
 
 **git bisect + delta debugging for AI agents.**
-AgentRelay takes a failed agent run, finds *which step* and *which piece of context* caused the
+AgentBisect takes a failed agent run, finds *which step* and *which piece of context* caused the
 failure, shrinks it to the smallest reproducible case, and turns it into a regression test that
 fails until the bug is fixed.
 
@@ -16,7 +16,7 @@ project directory. ([Terminal recording](docs/demo.cast), playable with `asciine
 ## Why
 
 When an agent misbehaves you usually open a tracing UI, scroll through dozens of steps, and guess.
-Replay tools let you re-run and fork a trace, but a human still has to find the cause. AgentRelay
+Replay tools let you re-run and fork a trace, but a human still has to find the cause. AgentBisect
 answers the questions directly, and treats every answer statistically, because models are
 nondeterministic:
 
@@ -33,12 +33,12 @@ runs in CI.
 ## Quickstart (no API key, under 5 minutes)
 
 Every example agent can run against **FakeLLM**, an offline model that reproduces each bug, so you
-can try the whole loop without a key. AgentRelay needs Python 3.11+ and
+can try the whole loop without a key. AgentBisect needs Python 3.11+ and
 [uv](https://docs.astral.sh/uv/).
 
 ```bash
-git clone https://github.com/Samarthbhogte/agentrelay-.git agentrelay
-cd agentrelay
+git clone https://github.com/Samarthbhogte/agentbisect.git agentbisect
+cd agentbisect
 uv sync --all-extras
 
 # 1. Record a run where the cleanup agent deletes the whole project
@@ -53,7 +53,7 @@ uv run relay explain last --step auto \
 # 3. Turn it into a regression test that checks the fixed prompt
 uv run relay emit-test last --step s0002 --out my_regressions \
   --system-prompt examples.file_cleanup_agent.agent:SYSTEM_FIXED
-AGENTRELAY_PROVIDER=fake uv run pytest my_regressions
+AGENTBISECT_PROVIDER=fake uv run pytest my_regressions
 
 # 4. Find the first bad step of a multi-step failure (the refund agent quotes a stale policy)
 uv run python -m examples.refund_agent.agent --provider fake --seed 7
@@ -69,7 +69,7 @@ retrieved the outdated document. Point any command at a real model with `--provi
 
 ```python
 import anthropic
-import agentrelay as relay
+import agentbisect as relay
 
 client = relay.wrap(anthropic.Anthropic())      # or openai.OpenAI(); sync, async and streaming
 
@@ -94,7 +94,7 @@ Then write an **oracle**: a function that says whether a response (or a whole ru
 *which* failure it was.
 
 ```python
-from agentrelay import Failure, oracle
+from agentbisect import Failure, oracle
 
 
 @oracle("deletes-outside-tmp", level="decision")
@@ -112,7 +112,7 @@ auto --oracle oracles.py:deletes_outside_tmp`. See [writing oracles](docs/oracle
 
 | Command | What it does |
 |---|---|
-| `relay init` | Create `agentrelay.toml` and add `.agentrelay/` to `.gitignore` |
+| `relay init` | Create `agentbisect.toml` and add `.agentbisect/` to `.gitignore` |
 | `relay record -- <cmd>` | Run a command with capture enabled and print the run id |
 | `relay ls`, `relay show <run>` | List runs; show a run or one step |
 | `relay try <run> --step S` | Re-run one decision N times and report its failure rate |
@@ -132,7 +132,7 @@ repeating a command costs nothing.
 ## How it works
 
 ```
-  your agent ──► Capture SDK ──► .agentrelay/  (runs as JSONL, redacted; blobs; trial cache)
+  your agent ──► Capture SDK ──► .agentbisect/  (runs as JSONL, redacted; blobs; trial cache)
                                       │
             ┌─────────────────────────┼──────────────────────────┐
      decision-level replay      context units                program-level replay
@@ -170,13 +170,13 @@ culprits together, failure rates 0.40 to 0.91). It runs offline in about 15 seco
 | Median shrink ratio ≥ 10× | **22.6×** |
 | ≥ 40% fewer model calls than leave-one-out (cases > 30 units) | **59% fewer** |
 
-| | AgentRelay | Leave-one-out | Random ablation (same budget) |
+| | AgentBisect | Leave-one-out | Random ablation (same budget) |
 |---|---|---|---|
 | False culprit rate | **0%** | 60% | 41% |
 | Model calls per diagnosis (mean) | 168 | 356 | 168 |
 
 Honest reading: top-1 accuracy doesn't separate the methods on this benchmark (planted triggers
-make culprits crisp, and random ablation also reaches 100% at the same budget). What AgentRelay
+make culprits crisp, and random ablation also reaches 100% at the same budget). What AgentBisect
 adds is that it doesn't wrongly blame innocent context, it costs about half of leave-one-out, and
 it hands you a minimal reproduction and a test. All 8 two-culprit cases were reported as the right
 "and" interaction. These are synthetic, offline numbers, so treat them as an upper bound; a live
@@ -190,7 +190,7 @@ benchmark against a real model is not done yet. Full tables in [bench/RESULTS.md
 - **Statistics cost calls.** A low failure rate (under 20%) is refused as too rare to diagnose at
   the default budget; raise `--trials` or lower the temperature. Unknown model prices are charged
   at a deliberately high default so budgets err on the safe side; set real prices in
-  `agentrelay.toml`.
+  `agentbisect.toml`.
 - **Necessity is not blame.** Context the model needs (for example the user's profile) can be as
   necessary as the culprit; explain reports that as an interaction, and the counterfactual
   rewrite helps tell instructions from facts.
@@ -209,6 +209,6 @@ Full list: [docs/limitations.md](docs/limitations.md).
 
 ## Status
 
-Version 0.1, alpha. The distribution name is `agent-relay` (the import name is `agentrelay` and
+Version 0.1, alpha. The distribution name is `agentbisect` (the import name is `agentbisect` and
 the command is `relay`); it is not on PyPI yet, so install from source as above. Licensed under
 [Apache-2.0](LICENSE).

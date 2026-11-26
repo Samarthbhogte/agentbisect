@@ -1,10 +1,10 @@
 # Limitations
 
-AgentRelay reports uncertainty instead of hiding it, and so should this page.
+AgentBisect reports uncertainty instead of hiding it, and so should this page.
 
 ## Replay determinism
 
-During program-level replay AgentRelay freezes `time.time()` (a clock starting at the recorded run's
+During program-level replay AgentBisect freezes `time.time()` (a clock starting at the recorded run's
 start), `uuid.uuid4()` and the global `random` generator, seeded from the run id and trial seed.
 `datetime.now()` / `utcnow()` are frozen **only in your entrypoint's module**: replacing the
 `datetime` class process-wide breaks libraries (including the LLM SDKs) that build schemas from it
@@ -31,7 +31,7 @@ the next request can differ from the recording and strict replay will report a d
   decision later.
 - Built-in model prices are deliberately absent; unknown models are charged a high default
   ($15/$75 per million tokens) so a budget is only ever exceeded on the safe side. Set real prices
-  in `agentrelay.toml`.
+  in `agentbisect.toml`.
 - `relay bisect` replays whole agent runs and has no cost budget yet. The LLM-as-judge oracle's
   own calls are not cached or budgeted.
 

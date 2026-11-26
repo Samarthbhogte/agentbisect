@@ -9,8 +9,8 @@ from pathlib import Path
 from bench.generate import N_CASES, N_TWO_CULPRIT, generate
 from bench.run_bench import aggregate, load_cases, render, run_case
 
-from agentrelay.context.units import decompose, explained_ids, unit_text
-from agentrelay.providers.base import LLMRequest
+from agentbisect.context.units import decompose, explained_ids, unit_text
+from agentbisect.providers.base import LLMRequest
 
 CASES = Path(__file__).resolve().parents[2] / "bench" / "cases"
 
@@ -45,11 +45,11 @@ def test_quick_bench_run(tmp_path: Path) -> None:
     elapsed = time.perf_counter() - started
     assert elapsed < 30  # the full 30-case bench must stay well under 3 minutes
     agg = aggregate(results)
-    assert agg["top1"]["agentrelay"] == 1.0
-    assert agg["false_culprit_rate"]["agentrelay"] == 0.0
+    assert agg["top1"]["agentbisect"] == 1.0
+    assert agg["false_culprit_rate"]["agentbisect"] == 0.0
     for r in results:
-        assert r["agentrelay"]["calls"] > 0 and r["random"]["calls"] >= r["agentrelay"]["calls"]
-        assert r["agentrelay"]["shrink_ratio"] and r["agentrelay"]["shrink_ratio"] > 1
+        assert r["agentbisect"]["calls"] > 0 and r["random"]["calls"] >= r["agentbisect"]["calls"]
+        assert r["agentbisect"]["shrink_ratio"] and r["agentbisect"]["shrink_ratio"] > 1
     md = render(results, agg, elapsed)
     for section in (
         "## Targets",

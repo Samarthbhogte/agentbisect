@@ -6,7 +6,7 @@ The documented fix (a system-prompt rule) appears in `unless_any`, which suppres
 
 from __future__ import annotations
 
-from agentrelay.providers.fake import Rule, text, tool_use
+from agentbisect.providers.fake import Rule, text, tool_use
 
 from .tools import PROJECT
 

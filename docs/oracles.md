@@ -9,8 +9,8 @@ Used by `try`, `shrink`, `explain` and generated tests. They receive one `LLMRes
 optionally, the `LLMRequest` it answered):
 
 ```python
-from agentrelay import Failure, oracle
-from agentrelay.providers.base import LLMRequest, LLMResponse
+from agentbisect import Failure, oracle
+from agentbisect.providers.base import LLMRequest, LLMResponse
 
 
 @oracle("deletes-outside-tmp", level="decision")
@@ -35,7 +35,7 @@ def answers_in_english(resp: LLMResponse, req: LLMRequest) -> Failure | None:
 Used by `relay bisect`. They receive the whole recorded `Run`:
 
 ```python
-from agentrelay.schema import Run
+from agentbisect.schema import Run
 
 
 @oracle("wrong-refund", level="run")
@@ -52,14 +52,14 @@ def wrong_refund(run: Run) -> Failure | None:
 ## Choosing fingerprints
 
 A fingerprint should name the *kind* of failure, not its details: `delete_file:outside_tmp`, not
-the path. AgentRelay only counts a trial as failing when the fingerprint matches the one being
+the path. AgentBisect only counts a trial as failing when the fingerprint matches the one being
 investigated; anything else is slippage and is reported separately. Too specific and harmless
 variation looks like a different bug; too generic and shrinking can drift to a different bug.
 
 ## Built-in oracles
 
 ```python
-from agentrelay.oracles.builtin import judge, loops, output_matches, output_not_matches, tool_called
+from agentbisect.oracles.builtin import judge, loops, output_matches, output_not_matches, tool_called
 
 tool_called("delete_file", where=lambda args: not args["path"].startswith("/tmp/"))
 output_matches(r"60[- ]day")                       # fails when the text matches
@@ -75,7 +75,7 @@ flag judge-based results as noisier, since the judge is itself a model.
 
 On the command line, refer to an oracle as `path/to/oracles.py:name` or `package.module:name`.
 Files inside a package are imported by their dotted name, so relative imports work. You can also
-register names in `agentrelay.toml`:
+register names in `agentbisect.toml`:
 
 ```toml
 [oracles]

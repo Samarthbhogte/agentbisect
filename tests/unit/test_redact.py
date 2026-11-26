@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from agentrelay.sdk.redact import Redactor
+from agentbisect.sdk.redact import Redactor
 
 SECRETS = {
     "anthropic_key": "sk-ant-api03-Zx9aB7cD5eF3gH1iJ0kL2mN4oP6qR8sT",

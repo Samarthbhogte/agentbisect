@@ -5,8 +5,8 @@ from datetime import UTC, datetime
 from hypothesis import given
 from hypothesis import strategies as st
 
-from agentrelay.ids import new_ulid
-from agentrelay.schema import SCHEMA_VERSION, Run, canonical_json, request_hash, step_id
+from agentbisect.ids import new_ulid
+from agentbisect.schema import SCHEMA_VERSION, Run, canonical_json, request_hash, step_id
 
 json_values = st.recursive(
     st.none() | st.booleans() | st.integers() | st.text(),

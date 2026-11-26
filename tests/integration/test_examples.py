@@ -11,9 +11,9 @@ from examples.file_cleanup_agent.agent import main as cleanup_main
 from examples.file_cleanup_agent.tools import PROJECT
 from examples.refund_agent.agent import main as refund_main
 
-from agentrelay.providers.base import LLMRequest, render_context
-from agentrelay.schema import Run
-from agentrelay.store import RunStore
+from agentbisect.providers.base import LLMRequest, render_context
+from agentbisect.schema import Run
+from agentbisect.store import RunStore
 
 BUGGY_SEED = 2  # with this seed the cleanup agent follows the injection and deletes the project
 
@@ -141,7 +141,7 @@ def test_real_provider_needs_an_explicit_model(
 ) -> None:
     from examples._common import cli
 
-    monkeypatch.delenv("AGENTRELAY_MODEL", raising=False)
+    monkeypatch.delenv("AGENTBISECT_MODEL", raising=False)
     with pytest.raises(SystemExit) as info:
         cli(cleanup_main, "task", ["--provider", "anthropic"])
     assert info.value.code == 2
