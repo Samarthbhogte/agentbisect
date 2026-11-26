@@ -27,8 +27,8 @@ nondeterministic:
 | *How sure* are we, and which unit matters most? | `relay explain` | Ablation and counterfactual rewrites, with confidence intervals |
 | How do we stop it coming back? | `relay emit-test` | A pytest regression test built from the minimal failing case |
 
-It is local-first (no telemetry, no hosted service), works with the Anthropic and OpenAI SDKs, and
-runs in CI.
+It is local-first (no telemetry, no hosted service), works with the Anthropic and OpenAI SDKs (and
+Gemini through its OpenAI-compatible API), and runs in CI.
 
 ## Quickstart (no API key, under 5 minutes)
 
@@ -62,8 +62,8 @@ uv run relay bisect last --oracle examples/refund_agent/oracles.py:wrong_refund
 
 `explain` ranks the injected chunk first (removing it takes the failure rate from about 90% to 0%),
 and `bisect` reports that the run is recoverable until step `s0003`, the `search_policy` call that
-retrieved the outdated document. Point any command at a real model with `--provider anthropic` and
-`ANTHROPIC_API_KEY` set.
+retrieved the outdated document. Point any command at a real model with `--provider anthropic`
+(`ANTHROPIC_API_KEY`) or `--provider gemini` (`GEMINI_API_KEY`), and pass `--model`.
 
 ## Use it on your agent
 
@@ -126,7 +126,7 @@ auto --oracle oracles.py:deletes_outside_tmp`. See [writing oracles](docs/oracle
 | `relay doctor` | Check the store, config and API keys |
 
 Runs are referred to by id, a unique prefix, or `last`. Analysis commands take `--json`, and
-`--provider anthropic|openai|fake`, `--max-cost`, `--concurrency`. Every trial is cached, so
+`--provider anthropic|openai|gemini|fake`, `--max-cost`, `--concurrency`. Every trial is cached, so
 repeating a command costs nothing.
 
 ## How it works
@@ -209,6 +209,6 @@ Full list: [docs/limitations.md](docs/limitations.md).
 
 ## Status
 
-Version 0.1, alpha. The distribution name is `agentbisect` (the import name is `agentbisect` and
-the command is `relay`); it is not on PyPI yet, so install from source as above. Licensed under
+Version 0.1, alpha. The package is `agentbisect` and the command is `relay`; it is not on PyPI
+yet, so install from source as above. Licensed under
 [Apache-2.0](LICENSE).

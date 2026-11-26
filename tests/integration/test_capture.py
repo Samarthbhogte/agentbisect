@@ -284,6 +284,19 @@ def test_implicit_run_names(monkeypatch: pytest.MonkeyPatch, argv0: str, name: s
     assert _implicit_name() == name
 
 
+def test_openai_client_pointed_at_gemini_records_as_gemini() -> None:
+    from agentbisect.providers.fake_http import fake_openai_client
+    from agentbisect.providers.gemini import BASE_URL
+
+    for base_url, expected in ((BASE_URL, "gemini"), (None, "openai")):
+        client = relay.wrap(fake_openai_client(llm(), base_url=base_url))
+        with relay.run("t"):
+            client.chat.completions.create(
+                model="m", messages=[{"role": "user", "content": "hi"}], max_tokens=10
+            )
+        assert last_run().steps[0].provider == expected
+
+
 def test_disabled_sdk_records_nothing(monkeypatch: pytest.MonkeyPatch, isolated_home: Path) -> None:
     monkeypatch.setenv("AGENTBISECT_DISABLED", "1")
     raw = fake_anthropic_client(llm())

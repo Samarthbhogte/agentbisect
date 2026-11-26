@@ -102,10 +102,26 @@ criterion passes.
 - [x] Quickstart verified verbatim on a fresh copy: 6 s with a warm uv cache, no API key; a CI job
   now runs it on every push
 - [x] `docs/`: concepts, writing oracles, CI guide, limitations and determinism caveats
-- [x] PyPI prep: `agentbisect` is taken on PyPI by an unrelated project, so the distribution is
-  `agentbisect` (import `agentbisect`, command `relay`). Metadata, URLs and classifiers set; wheel and
+- [x] PyPI prep: the original import name `agentrelay` was taken on PyPI by an unrelated project,
+  so the project was renamed to AgentBisect: distribution and import `agentbisect`, command
+  `relay` (unchanged). Metadata, URLs and classifiers set; wheel and
   sdist build and pass `twine check`; a clean wheel install works. **Not published**: waiting for
   the owner's go-ahead.
+
+## After M9
+- [x] Renamed to AgentBisect (`agentbisect`); store `.agentbisect/`, config `agentbisect.toml`,
+  env vars `AGENTBISECT_*`. Implicit runs from `python -c` are named `inline`, not `-c`.
+- [x] `--provider gemini`: Gemini through its OpenAI-compatible endpoint (key `GEMINI_API_KEY`).
+  It reuses `OpenAIProvider`, never sends `seed` (the endpoint rejects it with HTTP 400) and caches
+  under its own namespace. A wrapped OpenAI client pointed at Gemini records steps as `gemini`.
+  The example agents run on it too (`--provider gemini --model gemini-2.5-flash`), using a Chat
+  Completions loop.
+- [x] Rate limits: retries wait as long as the provider asks (`Retry-After` or Google's
+  `retryDelay`) up to 90 s; a longer wait (a daily quota) fails at once. Provider errors print
+  a short message and exit 3 instead of a traceback.
+- [ ] Live results: first live runs work end to end (3/3 cleanup runs on gemini-2.5-flash, and
+  the model ignored the planted injection each time). The statistical runs are blocked by the
+  free tier's 20 requests per model per day.
 
 ## Decisions
 - M0: the repo root is this folder (it already held BLUEPRINT.md), not a nested
@@ -328,12 +344,12 @@ criterion passes.
   files, because the build backend honors `.gitignore` but not git's local exclude file; the
   allowlist makes that impossible. Nothing had been uploaded.
 - M9: package metadata lists the author's name only (no email), since PyPI shows it publicly.
-- M9: the other `agentbisect` distribution on PyPI probably also uses the import name `agentbisect`,
-  so installing both in one environment would conflict. Renaming the import package is possible
-  before the first release if that matters.
+- M9: the import name `agentrelay` clashed with an unrelated PyPI distribution, so installing both
+  would conflict. Resolved after M9 by renaming the project to AgentBisect (`agentbisect`, free on
+  PyPI).
 
 ## Known gaps
-- No real model prices are built in (see Decisions); set them in `agentbisect.toml`. Recorded
+- Only Gemini 2.5 Flash / Flash-Lite prices are built in; set others in `agentbisect.toml`. Recorded
   `cost_usd` on captured steps is still `None`.
 - `judge()` calls are not cached or counted against the budget yet.
 - Live tests against real APIs (`tests/live/`) are not written yet; everything so far is verified

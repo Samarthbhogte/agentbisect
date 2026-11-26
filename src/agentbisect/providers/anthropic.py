@@ -7,6 +7,7 @@ verbatim as ``type="other"`` (or ``"image"``) blocks with the original payload i
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 from agentbisect._json import to_jsonable
@@ -296,4 +297,31 @@ def _provider_error(exc: Exception) -> Exception:
     )
     if status is None and not retryable:
         return exc
-    return ProviderError(f"{name}: {exc}", retryable=retryable, status_code=status)
+    return ProviderError(
+        f"{name}: {_short(exc)}",
+        retryable=retryable,
+        status_code=status,
+        retry_after=retry_after_seconds(exc),
+    )
+
+
+_RETRY_DELAY = re.compile(r"""["']retryDelay["']\s*:\s*["'](\d+(?:\.\d+)?)s["']""")
+
+
+def retry_after_seconds(exc: Exception) -> float | None:
+    """How long the provider asked us to wait: the `Retry-After` header, else a Google-style
+    `retryDelay` in the error body."""
+    headers = getattr(getattr(exc, "response", None), "headers", None)
+    value = headers.get("retry-after") if headers is not None else None
+    if value is not None:
+        try:
+            return max(0.0, float(value))
+        except ValueError:
+            pass
+    match = _RETRY_DELAY.search(f"{exc} {getattr(exc, 'body', '')}")
+    return float(match.group(1)) if match else None
+
+
+def _short(exc: Exception, limit: int = 300) -> str:
+    text = " ".join(str(exc).split())
+    return text if len(text) <= limit else text[: limit - 1] + "…"

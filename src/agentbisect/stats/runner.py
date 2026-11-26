@@ -68,6 +68,11 @@ class _Tally:
     slippage: Counter[str] = field(default_factory=Counter)
 
 
+# Longest wait honored from a provider's Retry-After / retryDelay (per-minute quotas need ~60 s).
+# A longer requested wait (e.g. a daily quota) fails immediately instead of retrying.
+MAX_RETRY_WAIT = 90.0
+
+
 def is_retryable(exc: BaseException) -> bool:
     """An explicit `retryable` flag wins; otherwise HTTP 429 and 5xx are retried."""
     flag = getattr(exc, "retryable", None)
@@ -137,12 +142,17 @@ class TrialRunner:
             try:
                 return await self.provider.complete(req, seed=seed)
             except Exception as exc:
-                if attempt >= self.max_retries or not is_retryable(exc):
-                    raise
+                asked = getattr(exc, "retry_after", None)
+                too_long = isinstance(asked, int | float) and asked > MAX_RETRY_WAIT
+                if attempt >= self.max_retries or not is_retryable(exc) or too_long:
+                    raise  # a wait longer than the cap is a daily quota: retrying won't help
                 attempt += 1
                 self.stats.retries += 1
                 delay = self.backoff_base * 2 ** (attempt - 1)
-                await self._sleep(delay + random.uniform(0, delay))
+                delay += random.uniform(0, delay)
+                if isinstance(asked, int | float) and asked > delay:
+                    delay = float(asked) + random.uniform(0, 1)
+                await self._sleep(delay)
 
     async def _trial(self, req: LLMRequest, idx: int) -> _Trial:
         resp = await self.sample(req, idx)

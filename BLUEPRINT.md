@@ -827,7 +827,7 @@ Do not start a milestone until all acceptance criteria of the previous one pass.
   to first diagnosis in under 5 minutes with no API key (FakeLLM example), architecture summary,
   bench results, limitations.
 - `docs/`: concepts, writing oracles, CI guide, limitations and determinism caveats.
-- Prepare PyPI publishing (check the `agentbisect` name; fallback `agentbisect`). Do not publish
+- Prepare PyPI publishing (check the `agentbisect` name). Do not publish
   without the owner's go-ahead.
 
 ### Stretch (after v1)

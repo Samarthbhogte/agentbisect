@@ -10,7 +10,7 @@ from typing import Any
 from agentbisect.config import Config, load_config
 from agentbisect.oracles.api import Oracle, acheck, check, load_oracle
 from agentbisect.providers.base import LLMProvider, LLMRequest, LLMResponse
-from agentbisect.providers.registry import cache_namespace, make_provider
+from agentbisect.providers.registry import PROVIDERS, cache_namespace, make_provider
 from agentbisect.replay.decision import RequestOverrides, build_request, find_step, request_of
 from agentbisect.schema import Failure, RateEstimate, Run, Step
 from agentbisect.stats.runner import ANY_FINGERPRINT, Budget, RunnerStats, TrialRunner
@@ -76,10 +76,10 @@ def summarize(resp: LLMResponse, width: int = 80) -> str:
 
 def resolve_provider(step: Step, opts: ProviderOptions, cfg: Config) -> LLMProvider:
     name = opts.provider or step.provider
-    if name not in ("anthropic", "openai", "fake"):
+    if name not in PROVIDERS:
         raise TryError(
             f"step {step.id} was recorded with provider {step.provider!r}; "
-            "pass --provider anthropic|openai|fake"
+            f"pass --provider {'|'.join(PROVIDERS)}"
         )
     return make_provider(name, fake_rules=opts.fake_rules, prices=cfg.prices)
 

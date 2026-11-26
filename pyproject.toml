@@ -1,6 +1,5 @@
 [project]
-# The import name is `agentbisect` and the command is `relay`; the distribution is `agentbisect`
-# because `agentbisect` is taken on PyPI by an unrelated project.
+# Distribution and import name `agentbisect`; the command is `relay`.
 name = "agentbisect"
 version = "0.1.0"
 description = "git bisect + delta debugging for AI agents: find which step and which context caused a failure"
@@ -50,7 +49,7 @@ Issues = "https://github.com/Samarthbhogte/agentbisect/issues"
 Documentation = "https://github.com/Samarthbhogte/agentbisect/tree/main/docs"
 
 [project.scripts]
-relay = "agentbisect.cli:app"
+relay = "agentbisect.cli:run"
 
 [project.entry-points.pytest11]
 agentbisect = "agentbisect.pytest_plugin"

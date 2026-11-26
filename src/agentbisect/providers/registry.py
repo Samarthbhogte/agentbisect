@@ -1,12 +1,13 @@
-"""Build a provider from CLI options: `--provider anthropic|openai|fake --fake-rules FILE`."""
+"""Build a provider from CLI options: `--provider anthropic|openai|gemini|fake`."""
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from agentbisect.providers.base import LLMProvider
 
-PROVIDERS = ("anthropic", "openai", "fake")
+PROVIDERS = ("anthropic", "openai", "gemini", "fake")
 
 
 class ProviderSetupError(ValueError):
@@ -35,6 +36,13 @@ def make_provider(
         from agentbisect.providers.openai import OpenAIProvider
 
         return OpenAIProvider(prices=prices)
+    if name == "gemini":
+        _require("openai")  # Gemini is reached through its OpenAI-compatible endpoint
+        from agentbisect.providers.gemini import API_KEY_ENV, GeminiProvider
+
+        if not os.environ.get(API_KEY_ENV):
+            raise ProviderSetupError(f"--provider gemini needs {API_KEY_ENV} to be set")
+        return GeminiProvider(prices=prices)
     raise ProviderSetupError(f"unknown provider {name!r}; choose from {', '.join(PROVIDERS)}")
 
 

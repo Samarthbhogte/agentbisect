@@ -267,7 +267,8 @@ def _show_step(step: Step) -> None:
 
 # ---- try ----------------------------------------------------------------------------------
 ProviderOpt = Annotated[
-    str | None, typer.Option("--provider", help="anthropic, openai or fake (default: as recorded).")
+    str | None,
+    typer.Option("--provider", help="anthropic, openai, gemini or fake (default: as recorded)."),
 ]
 FakeRulesOpt = Annotated[
     str | None, typer.Option("--fake-rules", help="FakeLLM rules file (with --provider fake).")
@@ -979,15 +980,36 @@ def doctor() -> None:
     console.print(f"store      {home} ({'exists' if home.is_dir() else 'not created yet'})")
     config = home.parent / CONFIG_NAME
     console.print(f"config     {config} ({'found' if config.is_file() else 'not found'})")
-    for key in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY"):
+    for key in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY"):
         console.print(f"{key:<18} {'set' if os.environ.get(key) else 'not set'}")
     if home.is_dir():
         console.print(f"runs       {len(RunStore(home).run_ids())}")
 
 
 def run() -> None:  # pragma: no cover
-    app(prog_name="relay")
+    sys.exit(run_cli())
+
+
+def run_cli(argv: list[str] | None = None) -> int:
+    """Run the CLI; a provider failure that survived retries becomes a short message, exit 3."""
+    from agentbisect.providers.base import ProviderError
+
+    try:
+        app(args=argv, prog_name="relay")
+    except SystemExit as exc:  # typer ends every run with sys.exit
+        return exc.code if isinstance(exc.code, int) else (0 if exc.code is None else 1)
+    except ProviderError as exc:
+        err.print(f"[red]provider error:[/red] {escape(str(exc))}")
+        if exc.status_code == 429:
+            wait = f" (it asked to wait {exc.retry_after:.0f} s)" if exc.retry_after else ""
+            err.print(
+                f"The provider is rate limiting requests{wait}. Wait, lower --concurrency, or "
+                "use a key with a higher quota; free tiers can be as low as 20 requests a day. "
+                "Finished trials are cached, so rerunning the same command does not repeat them."
+            )
+        return 3
+    return 0
 
 
 if __name__ == "__main__":  # pragma: no cover
-    sys.exit(app())
+    run()

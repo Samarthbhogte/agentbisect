@@ -241,16 +241,25 @@ def fake_anthropic_client(llm: FakeLLM, *, seed: int = 0, async_client: bool = F
     )
 
 
-def fake_openai_client(llm: FakeLLM, *, seed: int = 0, async_client: bool = False) -> Any:
-    """An `openai.OpenAI` (or `AsyncOpenAI`) answered by `llm`."""
+def fake_openai_client(
+    llm: FakeLLM, *, seed: int = 0, async_client: bool = False, base_url: str | None = None
+) -> Any:
+    """An `openai.OpenAI` (or `AsyncOpenAI`) answered by `llm`. `base_url` only changes the URL
+    the SDK reports (e.g. Gemini's compatible endpoint); requests still go to `llm`."""
     import httpx2
     import openai
 
     transport = httpx2.MockTransport(_openai_handler(_FakeServer(llm, seed, "call_fake")))
     if async_client:
         return openai.AsyncOpenAI(
-            api_key=FAKE_KEY, max_retries=0, http_client=httpx2.AsyncClient(transport=transport)
+            api_key=FAKE_KEY,
+            base_url=base_url,
+            max_retries=0,
+            http_client=httpx2.AsyncClient(transport=transport),
         )
     return openai.OpenAI(
-        api_key=FAKE_KEY, max_retries=0, http_client=httpx2.Client(transport=transport)
+        api_key=FAKE_KEY,
+        base_url=base_url,
+        max_retries=0,
+        http_client=httpx2.Client(transport=transport),
     )

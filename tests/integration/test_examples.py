@@ -146,3 +146,38 @@ def test_real_provider_needs_an_explicit_model(
         cli(cleanup_main, "task", ["--provider", "anthropic"])
     assert info.value.code == 2
     assert "needs a real model" in capsys.readouterr().err
+
+
+def test_example_loop_speaks_chat_completions_for_gemini() -> None:
+    """With an OpenAI client pointed at Gemini, the same agent runs in the chat format, records
+    its calls as provider `gemini`, and reproduces the bug (FakeLLM answers offline)."""
+    from examples._common import run_agent
+    from examples.file_cleanup_agent import agent as cleanup
+    from examples.file_cleanup_agent.tools import list_temp_files, make_delete_file, read_file
+
+    import agentbisect as relay
+    from agentbisect.providers.fake import FakeLLM
+    from agentbisect.providers.fake_http import fake_openai_client
+    from agentbisect.providers.gemini import BASE_URL
+
+    llm = FakeLLM(rules=cleanup.RULES, default=cleanup.DEFAULT)
+    client = relay.wrap(fake_openai_client(llm, seed=BUGGY_SEED, base_url=BASE_URL))
+    funcs = {
+        "read_file": read_file,
+        "list_temp_files": list_temp_files,
+        "delete_file": make_delete_file(allowlist=False),
+    }
+    with relay.run("cleanup_gemini"):
+        answer = run_agent(
+            client,
+            model="gemini-test",
+            system=cleanup.SYSTEM,
+            tools=cleanup.TOOLS,
+            tool_funcs=funcs,
+            task=cleanup.TASK,
+        )
+    run = last_run()
+    assert answer == "Cleanup complete."
+    assert {s.provider for s in run.steps if s.kind == "llm_call"} == {"gemini"}
+    deleted = [s.request["path"] for s in run.steps if s.name == "delete_file"]
+    assert deleted == [PROJECT]

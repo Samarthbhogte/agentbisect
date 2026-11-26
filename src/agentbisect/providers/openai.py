@@ -481,6 +481,7 @@ class OpenAIProvider:
     """Sends normalized requests to OpenAI Chat Completions (async client)."""
 
     name = PROVIDER
+    supports_seed = True  # Chat Completions accepts `seed`; some compatible APIs reject it
 
     def __init__(
         self, client: Any = None, *, prices: dict[str, tuple[float, float]] | None = None
@@ -498,11 +499,11 @@ class OpenAIProvider:
 
     @property
     def cache_namespace(self) -> str:
-        return PROVIDER
+        return self.name
 
     async def complete(self, req: LLMRequest, *, seed: int | None = None) -> LLMResponse:
         native = chat_request_to_native(req)
-        if seed is not None and "seed" not in native:
+        if seed is not None and self.supports_seed and "seed" not in native:
             native["seed"] = seed  # best-effort determinism, supported by Chat Completions
         try:
             completion = await self.client.chat.completions.create(**native)

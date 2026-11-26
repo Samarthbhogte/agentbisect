@@ -9,8 +9,9 @@ The **current** system prompt and tool specs are swapped in when configured (`sy
 prompt the test checks the fix. Without them the recorded request is replayed as is
 (useful when upgrading models).
 
-Provider: `AGENTBISECT_PROVIDER` (`anthropic`, `openai`, `fake`), else the provider the step was
-recorded with. Without its API key the test is skipped, unless `AGENTBISECT_REQUIRE_LIVE=1`.
+Provider: `AGENTBISECT_PROVIDER` (`anthropic`, `openai`, `gemini`, `fake`), else the provider the
+step was recorded with. Without its API key the test is skipped, unless
+`AGENTBISECT_REQUIRE_LIVE=1`.
 `AGENTBISECT_PROVIDER=fake` uses `AGENTBISECT_FAKE_RULES` (or the rules file stored at emit time).
 """
 
@@ -28,7 +29,11 @@ from pydantic import BaseModel, Field
 from agentbisect.schema import RateEstimate
 
 ScenarioStatus = Literal["pass", "regression", "skipped", "error"]
-KEY_ENV = {"anthropic": "ANTHROPIC_API_KEY", "openai": "OPENAI_API_KEY"}
+KEY_ENV = {
+    "anthropic": "ANTHROPIC_API_KEY",
+    "openai": "OPENAI_API_KEY",
+    "gemini": "GEMINI_API_KEY",
+}
 
 
 class ScenarioSkipped(Exception):

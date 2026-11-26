@@ -148,3 +148,18 @@ def test_record_passes_through_the_exit_code(isolated_home: Path) -> None:
     )
     assert proc.returncode == 3
     assert "no runs were recorded" in proc.stderr
+
+
+def test_provider_errors_print_a_short_message_not_a_traceback(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from agentbisect import cli
+    from agentbisect.providers.base import ProviderError
+
+    def rate_limited(*args: object, **kwargs: object) -> None:
+        raise ProviderError("RateLimitError: quota", retryable=True, status_code=429)
+
+    monkeypatch.setattr(cli, "app", rate_limited)
+    assert cli.run_cli(["try", "last"]) == 3
+    out = capsys.readouterr().err
+    assert "provider error" in out and "rate limiting" in out and "Traceback" not in out

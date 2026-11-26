@@ -9,7 +9,7 @@ from agentbisect.oracles.api import acheck, oracle
 from agentbisect.providers.base import LLMRequest, LLMResponse, Message, ProviderError, text_block
 from agentbisect.providers.fake import FakeLLM, Rule, text, tool_use
 from agentbisect.schema import Failure
-from agentbisect.stats.runner import Budget, TrialRunner
+from agentbisect.stats.runner import MAX_RETRY_WAIT, Budget, TrialRunner
 from agentbisect.store.cache import TrialCache
 
 DELETE = tool_use("delete_file", {"path": "/home/user/project"})
@@ -164,9 +164,12 @@ class Flaky:
 
     name = "flaky"
 
-    def __init__(self, fail_times: int, *, retryable: bool = True) -> None:
+    def __init__(
+        self, fail_times: int, *, retryable: bool = True, retry_after: float | None = None
+    ) -> None:
         self.fail_times = fail_times
         self.retryable = retryable
+        self.retry_after = retry_after
         self.attempts = 0
         self.in_flight = 0
         self.max_in_flight = 0
@@ -179,7 +182,12 @@ class Flaky:
         self.in_flight -= 1
         if self.fail_times > 0:
             self.fail_times -= 1
-            raise ProviderError("overloaded", retryable=self.retryable, status_code=529)
+            raise ProviderError(
+                "overloaded",
+                retryable=self.retryable,
+                status_code=529,
+                retry_after=self.retry_after,
+            )
         return text("ok")
 
     def estimate_cost(self, req: LLMRequest) -> float:
@@ -205,6 +213,29 @@ async def test_retries_with_backoff_on_retryable_errors() -> None:
         True,
         True,
     ]
+
+
+async def test_waits_as_long_as_the_provider_asks_unless_it_is_a_daily_quota() -> None:
+    delays: list[float] = []
+
+    async def record_sleep(d: float) -> None:
+        delays.append(d)
+
+    r = TrialRunner(
+        Flaky(fail_times=1, retry_after=30.0),
+        judge,
+        cache=None,
+        budget=Budget(),
+        sleep=record_sleep,
+    )
+    assert (await r.sample(req(), 0)).text() == "ok"
+    assert 30.0 <= delays[0] <= 31.0  # per-minute quota: wait what the provider said
+
+    daily = Flaky(fail_times=1, retry_after=MAX_RETRY_WAIT * 100)
+    r2 = TrialRunner(daily, judge, cache=None, budget=Budget(), sleep=record_sleep)
+    with pytest.raises(ProviderError):
+        await r2.sample(req(), 0)  # daily quota: fail at once, don't sleep for hours
+    assert daily.attempts == 1 and len(delays) == 1
 
 
 async def test_gives_up_after_max_retries_and_never_retries_other_errors() -> None:

@@ -11,6 +11,9 @@ from agentbisect.providers.base import LLMRequest, LLMResponse, render_context
 
 PRICES: dict[str, tuple[float, float]] = {
     "fake": (1.0, 5.0),
+    # Google list prices (standard tier, text), checked 2026-11-25. Longest prefix wins.
+    "gemini-2.5-flash": (0.30, 2.50),
+    "gemini-2.5-flash-lite": (0.10, 0.40),
 }
 UNKNOWN_PRICE: tuple[float, float] = (15.0, 75.0)
 
