@@ -32,3 +32,16 @@ jobs:
     with:
       scenarios-path: examples/file_cleanup_agent/regression
       provider: fake
+
+  # RelayBench must stay offline and finish in under 3 minutes (BLUEPRINT M8).
+  bench:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      UV_PYTHON: "3.12"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --all-extras
+      - run: uv run python bench/run_bench.py --out "$RUNNER_TEMP/RESULTS.md" --json "$RUNNER_TEMP/results.json"
+      - run: cat "$RUNNER_TEMP/RESULTS.md" >> "$GITHUB_STEP_SUMMARY"

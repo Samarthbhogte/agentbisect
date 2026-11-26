@@ -1,0 +1,2366 @@
+{
+ "aggregate": {
+  "cases": 30,
+  "two_culprit_cases": 8,
+  "large_cases": 26,
+  "top1": {
+   "agentrelay": 1.0,
+   "loo": 0.9333333333333333,
+   "random": 1.0
+  },
+  "top3": {
+   "agentrelay": 1.0,
+   "loo": 1.0,
+   "random": 1.0
+  },
+  "false_culprit_rate": {
+   "agentrelay": 0.0,
+   "loo": 0.6,
+   "random": 0.4107142857142857
+  },
+  "missed_culprit_rate": {
+   "agentrelay": 0.05263157894736842,
+   "loo": 0.0,
+   "random": 0.13157894736842105
+  },
+  "median_shrink_ratio": 22.598696506445584,
+  "min_shrink_ratio": 6.0,
+  "interaction_accuracy": 1.0,
+  "calls_mean": {
+   "agentrelay": 168.13333333333333,
+   "loo": 355.8666666666667,
+   "random": 168.13333333333333
+  },
+  "calls_median": {
+   "agentrelay": 138.0,
+   "loo": 354.0,
+   "random": 138.0
+  },
+  "cost_mean": {
+   "agentrelay": 0.4038018333333334,
+   "loo": 2.0968158666666668,
+   "random": 0.48309013333333334
+  },
+  "fewer_trials_than_loo_large": 0.5869912210694334,
+  "per_case_savings_large": [
+   0.1875,
+   0.3380281690140845,
+   0.6753246753246753,
+   0.7204301075268817,
+   0.627906976744186,
+   0.6666666666666667,
+   0.7956204379562044,
+   0.4915254237288136,
+   0.27368421052631575,
+   0.5975609756097561,
+   0.5679012345679013,
+   0.7473684210526316,
+   0.6555555555555556,
+   0.22480620155038755,
+   0.367816091954023,
+   0.6781609195402298,
+   0.5333333333333333,
+   0.7786885245901639,
+   0.7575757575757576,
+   0.7099236641221374,
+   0.5666666666666667,
+   0.7346938775510203,
+   0.6583333333333333,
+   0.6974789915966386,
+   0.14102564102564108,
+   0.6444444444444444
+  ],
+  "statuses": {
+   "ok": 28,
+   "no_culprit": 2
+  }
+ },
+ "cases": [
+  {
+   "id": "case_00",
+   "units": 46,
+   "interaction": true,
+   "probability": 0.49,
+   "ground_truth": [
+    "msg.12.tr.0",
+    "tool.get_invoice"
+   ],
+   "culprit_kinds": [
+    "tool",
+    "result"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 5323,
+    "minimal_tokens": 180,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "tool.get_invoice",
+     "msg.12.tr.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "tool.get_invoice",
+     "msg.12.tr.0"
+    ],
+    "shrink_ratio": 29.572222222222223,
+    "interaction_correct": true,
+    "calls": 260,
+    "cost": 0.6432160000000006
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "sys.1",
+     "tool.get_invoice",
+     "msg.6.tr.0.chunk.1",
+     "msg.10.tr.0",
+     "msg.12.tr.0",
+     "msg.20.tr.0.chunk.0",
+     "msg.20.tr.0.chunk.2",
+     "msg.20.tr.0.chunk.4",
+     "msg.22.tr.0.chunk.2",
+     "msg.24.tr.0",
+     "msg.28.tr.0.chunk.1"
+    ],
+    "false_flags": [
+     "msg.10.tr.0",
+     "msg.20.tr.0.chunk.0",
+     "msg.20.tr.0.chunk.2",
+     "msg.20.tr.0.chunk.4",
+     "msg.22.tr.0.chunk.2",
+     "msg.24.tr.0",
+     "msg.28.tr.0.chunk.1",
+     "msg.6.tr.0.chunk.1",
+     "sys.1"
+    ],
+    "missed": [],
+    "ranking": [
+     "tool.get_invoice",
+     "msg.12.tr.0",
+     "msg.10.tr.0",
+     "msg.20.tr.0.chunk.0",
+     "msg.20.tr.0.chunk.4"
+    ],
+    "calls": 320,
+    "cost": 1.6974789999999977
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [],
+    "false_flags": [],
+    "missed": [
+     "msg.12.tr.0",
+     "tool.get_invoice"
+    ],
+    "ranking": [
+     "msg.12.tr.0",
+     "tool.get_invoice",
+     "msg.6.tr.0.chunk.4",
+     "tool.purge_archive",
+     "msg.22.tr.0.chunk.1"
+    ],
+    "calls": 260,
+    "cost": 0.7129629999999992
+   },
+   "seconds": 0.52
+  },
+  {
+   "id": "case_01",
+   "units": 49,
+   "interaction": true,
+   "probability": 0.91,
+   "ground_truth": [
+    "sys.0",
+    "tool.list_users"
+   ],
+   "culprit_kinds": [
+    "tool",
+    "system"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 5036,
+    "minimal_tokens": 244,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "sys.0",
+     "tool.list_users"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "sys.0",
+     "tool.list_users"
+    ],
+    "shrink_ratio": 20.639344262295083,
+    "interaction_correct": true,
+    "calls": 188,
+    "cost": 0.32182900000000025
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "sys.0",
+     "tool.list_users"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "sys.0",
+     "tool.list_users",
+     "tool.read_config",
+     "msg.10.tr.0",
+     "tool.search_docs"
+    ],
+    "calls": 284,
+    "cost": 1.431263999999999
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "tool.list_users",
+     "sys.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "tool.list_users",
+     "sys.0",
+     "msg.18.tr.0",
+     "msg.2.tr.0",
+     "msg.12.tr.0.chunk.4"
+    ],
+    "calls": 188,
+    "cost": 0.5168540000000001
+   },
+   "seconds": 0.41
+  },
+  {
+   "id": "case_02",
+   "units": 56,
+   "interaction": false,
+   "probability": 0.91,
+   "ground_truth": [
+    "tool.list_users"
+   ],
+   "culprit_kinds": [
+    "tool"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 3694,
+    "minimal_tokens": 271,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "tool.list_users"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "tool.list_users"
+    ],
+    "shrink_ratio": 13.6309963099631,
+    "interaction_correct": null,
+    "calls": 100,
+    "cost": 0.18137700000000004
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "tool.list_users"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "tool.list_users",
+     "msg.16.tr.0",
+     "msg.14.tr.0.chunk.1",
+     "msg.28.tr.0.chunk.2",
+     "msg.44.tr.0.chunk.1"
+    ],
+    "calls": 308,
+    "cost": 1.152238000000001
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "tool.list_users",
+     "msg.54.tr.0",
+     "sys.0",
+     "tool.search_docs",
+     "tool.lookup_order"
+    ],
+    "false_flags": [
+     "msg.54.tr.0",
+     "sys.0",
+     "tool.lookup_order",
+     "tool.search_docs"
+    ],
+    "missed": [],
+    "ranking": [
+     "tool.list_users",
+     "msg.54.tr.0",
+     "sys.0",
+     "tool.search_docs",
+     "tool.lookup_order"
+    ],
+    "calls": 100,
+    "cost": 0.2086219999999999
+   },
+   "seconds": 0.36
+  },
+  {
+   "id": "case_03",
+   "units": 52,
+   "interaction": false,
+   "probability": 0.71,
+   "ground_truth": [
+    "tool.lookup_order"
+   ],
+   "culprit_kinds": [
+    "tool"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 5486,
+    "minimal_tokens": 141,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "tool.lookup_order"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "tool.lookup_order"
+    ],
+    "shrink_ratio": 38.90780141843972,
+    "interaction_correct": null,
+    "calls": 104,
+    "cost": 0.2279830000000004
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "tool.lookup_order"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "tool.lookup_order",
+     "tool.purge_archive",
+     "msg.12.tr.0.chunk.2",
+     "msg.14.tr.0",
+     "msg.20.tr.0.chunk.4"
+    ],
+    "calls": 372,
+    "cost": 2.0383509999999982
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "tool.lookup_order"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "tool.lookup_order",
+     "tool.send_report",
+     "msg.28.tr.0.chunk.5",
+     "msg.18.tr.0",
+     "sys.1"
+    ],
+    "calls": 104,
+    "cost": 0.2925940000000001
+   },
+   "seconds": 0.36
+  },
+  {
+   "id": "case_04",
+   "units": 53,
+   "interaction": false,
+   "probability": 0.85,
+   "ground_truth": [
+    "msg.36.tr.0"
+   ],
+   "culprit_kinds": [
+    "result"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 4602,
+    "minimal_tokens": 217,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.36.tr.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.36.tr.0"
+    ],
+    "shrink_ratio": 21.207373271889402,
+    "interaction_correct": null,
+    "calls": 128,
+    "cost": 0.3129510000000002
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.36.tr.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.36.tr.0",
+     "msg.6.tr.0",
+     "msg.16.tr.0",
+     "msg.8.tr.0.chunk.3",
+     "msg.14.tr.0"
+    ],
+    "calls": 344,
+    "cost": 1.588902999999998
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.36.tr.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.36.tr.0",
+     "msg.20.tr.0.chunk.0",
+     "msg.48.tr.0.chunk.0",
+     "msg.48.tr.0.chunk.2",
+     "msg.12.tr.0"
+    ],
+    "calls": 128,
+    "cost": 0.31967900000000016
+   },
+   "seconds": 0.41
+  },
+  {
+   "id": "case_05",
+   "units": 67,
+   "interaction": false,
+   "probability": 0.65,
+   "ground_truth": [
+    "msg.24.tr.0"
+   ],
+   "culprit_kinds": [
+    "result"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 6980,
+    "minimal_tokens": 308,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.24.tr.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.24.tr.0"
+    ],
+    "shrink_ratio": 22.662337662337663,
+    "interaction_correct": null,
+    "calls": 136,
+    "cost": 0.4401870000000003
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.6.tr.0.chunk.1",
+     "msg.24.tr.0"
+    ],
+    "false_flags": [
+     "msg.6.tr.0.chunk.1"
+    ],
+    "missed": [],
+    "ranking": [
+     "msg.24.tr.0",
+     "msg.6.tr.0.chunk.1",
+     "msg.42.tr.0",
+     "msg.44.tr.0.chunk.0",
+     "msg.52.tr.0"
+    ],
+    "calls": 408,
+    "cost": 2.852794000000001
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.24.tr.0",
+     "msg.44.tr.0.chunk.2"
+    ],
+    "false_flags": [
+     "msg.44.tr.0.chunk.2"
+    ],
+    "missed": [],
+    "ranking": [
+     "msg.24.tr.0",
+     "msg.44.tr.0.chunk.2",
+     "msg.26.tr.0.chunk.4",
+     "msg.38.tr.0.chunk.4",
+     "msg.32.tr.0"
+    ],
+    "calls": 136,
+    "cost": 0.5103250000000005
+   },
+   "seconds": 0.55
+  },
+  {
+   "id": "case_06",
+   "units": 74,
+   "interaction": false,
+   "probability": 0.66,
+   "ground_truth": [
+    "tool.query_metrics"
+   ],
+   "culprit_kinds": [
+    "tool"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 7782,
+    "minimal_tokens": 241,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "tool.query_metrics"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "tool.query_metrics"
+    ],
+    "shrink_ratio": 32.29045643153527,
+    "interaction_correct": null,
+    "calls": 112,
+    "cost": 0.3372800000000004
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "tool.query_metrics"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "tool.query_metrics",
+     "msg.28.tr.0.chunk.2",
+     "msg.32.tr.0.chunk.0",
+     "msg.58.tr.0.chunk.4",
+     "sys.0"
+    ],
+    "calls": 548,
+    "cost": 4.270726999999994
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "tool.query_metrics"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "tool.query_metrics",
+     "msg.4.tr.0",
+     "msg.32.tr.0.chunk.2",
+     "msg.62.tr.0",
+     "msg.24.tr.0.chunk.0"
+    ],
+    "calls": 112,
+    "cost": 0.47964199999999974
+   },
+   "seconds": 0.67
+  },
+  {
+   "id": "case_07",
+   "units": 28,
+   "interaction": true,
+   "probability": 0.74,
+   "ground_truth": [
+    "msg.14.tr.0",
+    "sys.1"
+   ],
+   "culprit_kinds": [
+    "result",
+    "system"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 2920,
+    "minimal_tokens": 233,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "sys.1",
+     "msg.14.tr.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "sys.1",
+     "msg.14.tr.0"
+    ],
+    "shrink_ratio": 12.532188841201716,
+    "interaction_correct": true,
+    "calls": 308,
+    "cost": 0.3696529999999994
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "sys.1",
+     "msg.14.tr.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "sys.1",
+     "msg.14.tr.0",
+     "msg.10.tr.0.chunk.0",
+     "msg.18.tr.0.chunk.0",
+     "tool.read_config"
+    ],
+    "calls": 204,
+    "cost": 0.5921820000000004
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "sys.1",
+     "msg.14.tr.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "sys.1",
+     "msg.14.tr.0",
+     "msg.10.tr.0.chunk.3",
+     "msg.8.tr.0.chunk.2",
+     "msg.10.tr.0.chunk.2"
+    ],
+    "calls": 308,
+    "cost": 0.46462199999999976
+   },
+   "seconds": 0.43
+  },
+  {
+   "id": "case_08",
+   "units": 16,
+   "interaction": false,
+   "probability": 0.48,
+   "ground_truth": [
+    "tool.read_ledger"
+   ],
+   "culprit_kinds": [
+    "tool"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 1051,
+    "minimal_tokens": 70,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "tool.read_ledger"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "tool.read_ledger"
+    ],
+    "shrink_ratio": 15.014285714285714,
+    "interaction_correct": null,
+    "calls": 92,
+    "cost": 0.05075700000000002
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "tool.read_ledger",
+     "tool.list_tickets",
+     "msg.6.tr.0.chunk.1",
+     "msg.6.tr.0.chunk.3"
+    ],
+    "false_flags": [
+     "msg.6.tr.0.chunk.1",
+     "msg.6.tr.0.chunk.3",
+     "tool.list_tickets"
+    ],
+    "missed": [],
+    "ranking": [
+     "tool.read_ledger",
+     "tool.list_tickets",
+     "msg.6.tr.0.chunk.3",
+     "msg.6.tr.0.chunk.1",
+     "tool.fetch_report"
+    ],
+    "calls": 124,
+    "cost": 0.132014
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "tool.read_ledger",
+     "sys.1"
+    ],
+    "false_flags": [
+     "sys.1"
+    ],
+    "missed": [],
+    "ranking": [
+     "tool.read_ledger",
+     "sys.1",
+     "tool.list_tickets",
+     "msg.6.tr.0.chunk.3",
+     "msg.6.tr.0.chunk.2"
+    ],
+    "calls": 92,
+    "cost": 0.055504
+   },
+   "seconds": 0.14
+  },
+  {
+   "id": "case_09",
+   "units": 34,
+   "interaction": false,
+   "probability": 0.8,
+   "ground_truth": [
+    "msg.10.tr.0"
+   ],
+   "culprit_kinds": [
+    "result"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 3367,
+    "minimal_tokens": 134,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.10.tr.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.10.tr.0"
+    ],
+    "shrink_ratio": 25.12686567164179,
+    "interaction_correct": null,
+    "calls": 120,
+    "cost": 0.23148899999999994
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.10.tr.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.10.tr.0",
+     "msg.12.tr.0.chunk.1",
+     "msg.24.tr.0.chunk.0",
+     "msg.26.tr.0.chunk.0",
+     "tool.send_report"
+    ],
+    "calls": 236,
+    "cost": 0.7937759999999997
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.10.tr.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.10.tr.0",
+     "tool.query_metrics",
+     "msg.24.tr.0.chunk.0",
+     "msg.26.tr.0.chunk.0",
+     "msg.12.tr.0.chunk.3"
+    ],
+    "calls": 120,
+    "cost": 0.23756400000000008
+   },
+   "seconds": 0.28
+  },
+  {
+   "id": "case_10",
+   "units": 71,
+   "interaction": true,
+   "probability": 0.75,
+   "ground_truth": [
+    "sys.0",
+    "tool.get_schedule"
+   ],
+   "culprit_kinds": [
+    "tool",
+    "system"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 7616,
+    "minimal_tokens": 315,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "sys.0",
+     "tool.get_schedule"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "sys.0",
+     "tool.get_schedule"
+    ],
+    "shrink_ratio": 24.177777777777777,
+    "interaction_correct": true,
+    "calls": 276,
+    "cost": 0.5808660000000003
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "sys.0",
+     "tool.get_schedule"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "sys.0",
+     "tool.get_schedule",
+     "msg.6.tr.0.chunk.2",
+     "tool.query_metrics",
+     "msg.2.tr.0.chunk.0"
+    ],
+    "calls": 380,
+    "cost": 2.8967989999999997
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "sys.0"
+    ],
+    "false_flags": [],
+    "missed": [
+     "tool.get_schedule"
+    ],
+    "ranking": [
+     "sys.0",
+     "tool.get_schedule",
+     "msg.30.tr.0.chunk.0",
+     "msg.6.tr.0.chunk.4",
+     "sys.1"
+    ],
+    "calls": 276,
+    "cost": 1.115579000000001
+   },
+   "seconds": 0.75
+  },
+  {
+   "id": "case_11",
+   "units": 44,
+   "interaction": false,
+   "probability": 0.49,
+   "ground_truth": [
+    "sys.3"
+   ],
+   "culprit_kinds": [
+    "system"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 4181,
+    "minimal_tokens": 242,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "sys.3"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "sys.3",
+     "sys.2"
+    ],
+    "shrink_ratio": 17.276859504132233,
+    "interaction_correct": null,
+    "calls": 132,
+    "cost": 0.26009199999999993
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "sys.2",
+     "sys.3",
+     "msg.42.tr.0.chunk.3"
+    ],
+    "false_flags": [
+     "msg.42.tr.0.chunk.3",
+     "sys.2"
+    ],
+    "missed": [],
+    "ranking": [
+     "sys.3",
+     "sys.2",
+     "msg.42.tr.0.chunk.3",
+     "msg.4.tr.0",
+     "msg.8.tr.0"
+    ],
+    "calls": 328,
+    "cost": 1.369141000000002
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "sys.3"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "sys.3",
+     "msg.24.tr.0",
+     "msg.14.tr.0.chunk.2",
+     "msg.28.tr.0",
+     "msg.20.tr.0"
+    ],
+    "calls": 132,
+    "cost": 0.30811
+   },
+   "seconds": 0.39
+  },
+  {
+   "id": "case_12",
+   "units": 56,
+   "interaction": false,
+   "probability": 0.88,
+   "ground_truth": [
+    "msg.18.tr.0.chunk.1"
+   ],
+   "culprit_kinds": [
+    "result"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 5554,
+    "minimal_tokens": 362,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.18.tr.0.chunk.1"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.18.tr.0.chunk.1"
+    ],
+    "shrink_ratio": 15.342541436464089,
+    "interaction_correct": null,
+    "calls": 140,
+    "cost": 0.3825839999999996
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.18.tr.0.chunk.1"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.18.tr.0.chunk.1",
+     "msg.20.tr.0.chunk.0",
+     "msg.2.tr.0",
+     "msg.26.tr.0.chunk.4",
+     "msg.40.tr.0.chunk.1"
+    ],
+    "calls": 324,
+    "cost": 1.798946000000001
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.18.tr.0.chunk.1",
+     "msg.4.tr.0",
+     "msg.26.tr.0.chunk.2",
+     "msg.16.tr.0",
+     "msg.36.tr.0"
+    ],
+    "false_flags": [
+     "msg.16.tr.0",
+     "msg.26.tr.0.chunk.2",
+     "msg.36.tr.0",
+     "msg.4.tr.0"
+    ],
+    "missed": [],
+    "ranking": [
+     "msg.18.tr.0.chunk.1",
+     "msg.4.tr.0",
+     "msg.26.tr.0.chunk.2",
+     "msg.16.tr.0",
+     "msg.36.tr.0"
+    ],
+    "calls": 140,
+    "cost": 0.41376900000000016
+   },
+   "seconds": 0.43
+  },
+  {
+   "id": "case_13",
+   "units": 60,
+   "interaction": false,
+   "probability": 0.5,
+   "ground_truth": [
+    "tool.read_config"
+   ],
+   "culprit_kinds": [
+    "tool"
+   ],
+   "agentrelay": {
+    "status": "no_culprit",
+    "original_tokens": 6904,
+    "minimal_tokens": 204,
+    "with_more_trials": {
+     "status": "ok",
+     "flagged": [
+      "tool.read_config"
+     ],
+     "extra_calls": 68
+    },
+    "top1": true,
+    "top3": true,
+    "flagged": [],
+    "false_flags": [],
+    "missed": [
+     "tool.read_config"
+    ],
+    "ranking": [
+     "tool.read_config"
+    ],
+    "shrink_ratio": 33.84313725490196,
+    "interaction_correct": null,
+    "calls": 96,
+    "cost": 0.5602739999999995
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "sys.0",
+     "sys.1",
+     "tool.read_config",
+     "msg.8.tr.0.chunk.0",
+     "msg.26.tr.0"
+    ],
+    "false_flags": [
+     "msg.26.tr.0",
+     "msg.8.tr.0.chunk.0",
+     "sys.0",
+     "sys.1"
+    ],
+    "missed": [],
+    "ranking": [
+     "tool.read_config",
+     "sys.0",
+     "sys.1",
+     "msg.8.tr.0.chunk.0",
+     "msg.26.tr.0"
+    ],
+    "calls": 380,
+    "cost": 2.6157120000000003
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "tool.read_config"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "tool.read_config",
+     "msg.2.tr.0.chunk.1",
+     "tool.send_report",
+     "msg.18.tr.0",
+     "msg.42.tr.0.chunk.1"
+    ],
+    "calls": 96,
+    "cost": 0.3667410000000001
+   },
+   "seconds": 0.5
+  },
+  {
+   "id": "case_14",
+   "units": 29,
+   "interaction": true,
+   "probability": 0.75,
+   "ground_truth": [
+    "msg.4.tr.0.chunk.0",
+    "tool.get_invoice"
+   ],
+   "culprit_kinds": [
+    "result",
+    "tool"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 2603,
+    "minimal_tokens": 289,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "tool.get_invoice",
+     "msg.4.tr.0.chunk.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "tool.get_invoice",
+     "msg.4.tr.0.chunk.0"
+    ],
+    "shrink_ratio": 9.006920415224913,
+    "interaction_correct": true,
+    "calls": 336,
+    "cost": 0.3943829999999994
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "tool.get_invoice",
+     "msg.4.tr.0.chunk.0",
+     "msg.12.tr.0"
+    ],
+    "false_flags": [
+     "msg.12.tr.0"
+    ],
+    "missed": [],
+    "ranking": [
+     "tool.get_invoice",
+     "msg.4.tr.0.chunk.0",
+     "msg.12.tr.0",
+     "msg.2.tr.0.chunk.3",
+     "sys.1"
+    ],
+    "calls": 208,
+    "cost": 0.5427960000000002
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "tool.get_invoice",
+     "msg.4.tr.0.chunk.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "tool.get_invoice",
+     "msg.4.tr.0.chunk.0",
+     "tool.fetch_report",
+     "msg.8.tr.0",
+     "msg.4.tr.0.chunk.2"
+    ],
+    "calls": 336,
+    "cost": 0.4570850000000001
+   },
+   "seconds": 0.5
+  },
+  {
+   "id": "case_15",
+   "units": 65,
+   "interaction": false,
+   "probability": 0.9,
+   "ground_truth": [
+    "msg.26.tr.0"
+   ],
+   "culprit_kinds": [
+    "result"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 6536,
+    "minimal_tokens": 264,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.26.tr.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.26.tr.0"
+    ],
+    "shrink_ratio": 24.757575757575758,
+    "interaction_correct": null,
+    "calls": 124,
+    "cost": 0.436389
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.26.tr.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.26.tr.0",
+     "msg.16.tr.0",
+     "msg.20.tr.0.chunk.0",
+     "msg.30.tr.0.chunk.2",
+     "msg.42.tr.0"
+    ],
+    "calls": 360,
+    "cost": 2.3577840000000005
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.26.tr.0",
+     "msg.2.tr.0.chunk.0",
+     "msg.10.tr.0",
+     "msg.18.tr.0",
+     "msg.46.tr.0.chunk.0"
+    ],
+    "false_flags": [
+     "msg.10.tr.0",
+     "msg.18.tr.0",
+     "msg.2.tr.0.chunk.0",
+     "msg.46.tr.0.chunk.0"
+    ],
+    "missed": [],
+    "ranking": [
+     "msg.26.tr.0",
+     "msg.2.tr.0.chunk.0",
+     "msg.10.tr.0",
+     "msg.18.tr.0",
+     "msg.46.tr.0.chunk.0"
+    ],
+    "calls": 124,
+    "cost": 0.42413200000000034
+   },
+   "seconds": 0.47
+  },
+  {
+   "id": "case_16",
+   "units": 70,
+   "interaction": true,
+   "probability": 0.56,
+   "ground_truth": [
+    "msg.56.tr.0.chunk.0",
+    "sys.1"
+   ],
+   "culprit_kinds": [
+    "result",
+    "system"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 7359,
+    "minimal_tokens": 509,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "sys.1",
+     "msg.56.tr.0.chunk.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "sys.1",
+     "msg.56.tr.0.chunk.0"
+    ],
+    "shrink_ratio": 14.457760314341847,
+    "interaction_correct": true,
+    "calls": 400,
+    "cost": 1.0485849999999999
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "sys.1",
+     "msg.14.tr.0.chunk.1",
+     "msg.14.tr.0.chunk.3",
+     "msg.26.tr.0.chunk.1",
+     "msg.28.tr.0.chunk.3",
+     "msg.28.tr.0.chunk.4",
+     "msg.42.tr.0",
+     "msg.56.tr.0.chunk.0"
+    ],
+    "false_flags": [
+     "msg.14.tr.0.chunk.1",
+     "msg.14.tr.0.chunk.3",
+     "msg.26.tr.0.chunk.1",
+     "msg.28.tr.0.chunk.3",
+     "msg.28.tr.0.chunk.4",
+     "msg.42.tr.0"
+    ],
+    "missed": [],
+    "ranking": [
+     "sys.1",
+     "msg.56.tr.0.chunk.0",
+     "msg.42.tr.0",
+     "msg.14.tr.0.chunk.1",
+     "msg.14.tr.0.chunk.3"
+    ],
+    "calls": 516,
+    "cost": 3.7960150000000024
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [],
+    "false_flags": [],
+    "missed": [
+     "msg.56.tr.0.chunk.0",
+     "sys.1"
+    ],
+    "ranking": [
+     "msg.56.tr.0.chunk.0",
+     "sys.1",
+     "msg.16.tr.0.chunk.1",
+     "msg.30.tr.0.chunk.0",
+     "msg.66.tr.0.chunk.1"
+    ],
+    "calls": 400,
+    "cost": 1.58429
+   },
+   "seconds": 1.04
+  },
+  {
+   "id": "case_17",
+   "units": 49,
+   "interaction": true,
+   "probability": 0.68,
+   "ground_truth": [
+    "sys.1",
+    "tool.read_config"
+   ],
+   "culprit_kinds": [
+    "system",
+    "tool"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 4521,
+    "minimal_tokens": 270,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "sys.1",
+     "tool.read_config"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "sys.1",
+     "tool.read_config"
+    ],
+    "shrink_ratio": 16.744444444444444,
+    "interaction_correct": true,
+    "calls": 220,
+    "cost": 0.3281660000000001
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "sys.1",
+     "tool.read_config"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "sys.1",
+     "tool.read_config",
+     "sys.2",
+     "tool.send_report",
+     "msg.10.tr.0.chunk.2"
+    ],
+    "calls": 348,
+    "cost": 1.5743959999999992
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "sys.1",
+     "tool.read_config"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "sys.1",
+     "tool.read_config",
+     "msg.20.tr.0.chunk.2",
+     "msg.42.tr.0.chunk.3",
+     "msg.6.tr.0.chunk.1"
+    ],
+    "calls": 220,
+    "cost": 0.5346850000000001
+   },
+   "seconds": 0.52
+  },
+  {
+   "id": "case_18",
+   "units": 46,
+   "interaction": false,
+   "probability": 0.4,
+   "ground_truth": [
+    "tool.list_tickets"
+   ],
+   "culprit_kinds": [
+    "tool"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 4716,
+    "minimal_tokens": 172,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "tool.list_tickets"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "tool.list_tickets"
+    ],
+    "shrink_ratio": 27.41860465116279,
+    "interaction_correct": null,
+    "calls": 112,
+    "cost": 0.20351300000000005
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "tool.search_docs",
+     "tool.list_tickets",
+     "msg.10.tr.0.chunk.3",
+     "msg.20.tr.0.chunk.1",
+     "msg.22.tr.0.chunk.2",
+     "msg.24.tr.0",
+     "msg.26.tr.0.chunk.1"
+    ],
+    "false_flags": [
+     "msg.10.tr.0.chunk.3",
+     "msg.20.tr.0.chunk.1",
+     "msg.22.tr.0.chunk.2",
+     "msg.24.tr.0",
+     "msg.26.tr.0.chunk.1",
+     "tool.search_docs"
+    ],
+    "missed": [],
+    "ranking": [
+     "tool.list_tickets",
+     "tool.search_docs",
+     "msg.10.tr.0.chunk.3",
+     "msg.20.tr.0.chunk.1",
+     "msg.22.tr.0.chunk.2"
+    ],
+    "calls": 348,
+    "cost": 1.6397509999999995
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "tool.list_tickets"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "tool.list_tickets",
+     "msg.26.tr.0.chunk.1",
+     "msg.16.tr.0",
+     "tool.search_docs",
+     "msg.22.tr.0.chunk.3"
+    ],
+    "calls": 112,
+    "cost": 0.28672699999999995
+   },
+   "seconds": 0.37
+  },
+  {
+   "id": "case_19",
+   "units": 45,
+   "interaction": false,
+   "probability": 0.82,
+   "ground_truth": [
+    "msg.26.tr.0"
+   ],
+   "culprit_kinds": [
+    "result"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 5114,
+    "minimal_tokens": 139,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.26.tr.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.26.tr.0"
+    ],
+    "shrink_ratio": 36.79136690647482,
+    "interaction_correct": null,
+    "calls": 140,
+    "cost": 0.372951
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.26.tr.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.26.tr.0",
+     "tool.lookup_order",
+     "msg.12.tr.0",
+     "msg.16.tr.0.chunk.0",
+     "msg.18.tr.0.chunk.1"
+    ],
+    "calls": 300,
+    "cost": 1.5280539999999974
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.26.tr.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.26.tr.0",
+     "msg.16.tr.0.chunk.2",
+     "msg.30.tr.0.chunk.2",
+     "msg.18.tr.0.chunk.0",
+     "msg.22.tr.0.chunk.1"
+    ],
+    "calls": 140,
+    "cost": 0.3622199999999999
+   },
+   "seconds": 0.37
+  },
+  {
+   "id": "case_20",
+   "units": 77,
+   "interaction": false,
+   "probability": 0.77,
+   "ground_truth": [
+    "sys.4"
+   ],
+   "culprit_kinds": [
+    "system"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 6960,
+    "minimal_tokens": 312,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "sys.4"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "sys.4"
+    ],
+    "shrink_ratio": 22.307692307692307,
+    "interaction_correct": null,
+    "calls": 108,
+    "cost": 0.3052390000000002
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "sys.4"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "sys.4",
+     "msg.52.tr.0.chunk.1",
+     "msg.38.tr.0.chunk.2",
+     "msg.38.tr.0.chunk.3",
+     "msg.44.tr.0"
+    ],
+    "calls": 488,
+    "cost": 3.4104270000000003
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "sys.4",
+     "msg.42.tr.0",
+     "sys.3"
+    ],
+    "false_flags": [
+     "msg.42.tr.0",
+     "sys.3"
+    ],
+    "missed": [],
+    "ranking": [
+     "sys.4",
+     "msg.42.tr.0",
+     "sys.3",
+     "msg.54.tr.0",
+     "tool.read_config"
+    ],
+    "calls": 108,
+    "cost": 0.4189430000000002
+   },
+   "seconds": 0.58
+  },
+  {
+   "id": "case_21",
+   "units": 76,
+   "interaction": false,
+   "probability": 0.41,
+   "ground_truth": [
+    "msg.22.tr.0"
+   ],
+   "culprit_kinds": [
+    "result"
+   ],
+   "agentrelay": {
+    "status": "no_culprit",
+    "original_tokens": 7486,
+    "minimal_tokens": 285,
+    "with_more_trials": {
+     "status": "ok",
+     "flagged": [
+      "msg.22.tr.0"
+     ],
+     "extra_calls": 84
+    },
+    "top1": true,
+    "top3": true,
+    "flagged": [],
+    "false_flags": [],
+    "missed": [
+     "msg.22.tr.0"
+    ],
+    "ranking": [
+     "msg.22.tr.0"
+    ],
+    "shrink_ratio": 26.266666666666666,
+    "interaction_correct": null,
+    "calls": 128,
+    "cost": 0.9042600000000006
+   },
+   "loo": {
+    "top1": false,
+    "top3": true,
+    "flagged": [
+     "msg.2.tr.0",
+     "msg.4.tr.0.chunk.2",
+     "msg.4.tr.0.chunk.3",
+     "msg.8.tr.0.chunk.1",
+     "msg.22.tr.0",
+     "msg.30.tr.0.chunk.2",
+     "msg.56.tr.0"
+    ],
+    "false_flags": [
+     "msg.2.tr.0",
+     "msg.30.tr.0.chunk.2",
+     "msg.4.tr.0.chunk.2",
+     "msg.4.tr.0.chunk.3",
+     "msg.56.tr.0",
+     "msg.8.tr.0.chunk.1"
+    ],
+    "missed": [],
+    "ranking": [
+     "msg.8.tr.0.chunk.1",
+     "msg.22.tr.0",
+     "msg.56.tr.0",
+     "msg.2.tr.0",
+     "msg.4.tr.0.chunk.2"
+    ],
+    "calls": 528,
+    "cost": 3.9585650000000028
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.22.tr.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.22.tr.0",
+     "msg.48.tr.0.chunk.4",
+     "msg.8.tr.0.chunk.0",
+     "msg.16.tr.0.chunk.0",
+     "tool.query_metrics"
+    ],
+    "calls": 128,
+    "cost": 0.5089279999999999
+   },
+   "seconds": 0.73
+  },
+  {
+   "id": "case_22",
+   "units": 67,
+   "interaction": false,
+   "probability": 0.54,
+   "ground_truth": [
+    "msg.24.tr.0"
+   ],
+   "culprit_kinds": [
+    "result"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 7264,
+    "minimal_tokens": 251,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.24.tr.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.24.tr.0"
+    ],
+    "shrink_ratio": 28.9402390438247,
+    "interaction_correct": null,
+    "calls": 152,
+    "cost": 0.5112270000000002
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "tool.send_report",
+     "msg.20.tr.0.chunk.2",
+     "msg.20.tr.0.chunk.4",
+     "msg.24.tr.0",
+     "msg.34.tr.0",
+     "msg.42.tr.0",
+     "msg.46.tr.0"
+    ],
+    "false_flags": [
+     "msg.20.tr.0.chunk.2",
+     "msg.20.tr.0.chunk.4",
+     "msg.34.tr.0",
+     "msg.42.tr.0",
+     "msg.46.tr.0",
+     "tool.send_report"
+    ],
+    "missed": [],
+    "ranking": [
+     "msg.24.tr.0",
+     "msg.20.tr.0.chunk.4",
+     "msg.46.tr.0",
+     "tool.send_report",
+     "msg.20.tr.0.chunk.2"
+    ],
+    "calls": 524,
+    "cost": 3.8014080000000057
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.24.tr.0",
+     "msg.20.tr.0.chunk.3"
+    ],
+    "false_flags": [
+     "msg.20.tr.0.chunk.3"
+    ],
+    "missed": [],
+    "ranking": [
+     "msg.24.tr.0",
+     "msg.20.tr.0.chunk.3",
+     "msg.36.tr.0.chunk.1",
+     "msg.58.tr.0",
+     "msg.56.tr.0.chunk.2"
+    ],
+    "calls": 152,
+    "cost": 0.5994950000000004
+   },
+   "seconds": 0.66
+  },
+  {
+   "id": "case_23",
+   "units": 51,
+   "interaction": false,
+   "probability": 0.51,
+   "ground_truth": [
+    "msg.28.tr.0.chunk.0"
+   ],
+   "culprit_kinds": [
+    "result"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 5552,
+    "minimal_tokens": 270,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.28.tr.0.chunk.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.28.tr.0.chunk.0"
+    ],
+    "shrink_ratio": 20.562962962962963,
+    "interaction_correct": null,
+    "calls": 156,
+    "cost": 0.4243160000000006
+   },
+   "loo": {
+    "top1": false,
+    "top3": true,
+    "flagged": [
+     "msg.10.tr.0.chunk.0",
+     "msg.16.tr.0",
+     "msg.28.tr.0.chunk.0"
+    ],
+    "false_flags": [
+     "msg.10.tr.0.chunk.0",
+     "msg.16.tr.0"
+    ],
+    "missed": [],
+    "ranking": [
+     "msg.16.tr.0",
+     "msg.28.tr.0.chunk.0",
+     "msg.10.tr.0.chunk.0",
+     "tool.read_ledger",
+     "msg.8.tr.0.chunk.4"
+    ],
+    "calls": 360,
+    "cost": 1.9909220000000034
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.28.tr.0.chunk.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.28.tr.0.chunk.0",
+     "msg.10.tr.0.chunk.3",
+     "msg.10.tr.0.chunk.1",
+     "msg.26.tr.0.chunk.2",
+     "sys.2"
+    ],
+    "calls": 156,
+    "cost": 0.4336009999999998
+   },
+   "seconds": 0.43
+  },
+  {
+   "id": "case_24",
+   "units": 69,
+   "interaction": false,
+   "probability": 0.91,
+   "ground_truth": [
+    "sys.4"
+   ],
+   "culprit_kinds": [
+    "system"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 8426,
+    "minimal_tokens": 235,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "sys.4"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "sys.4"
+    ],
+    "shrink_ratio": 35.85531914893617,
+    "interaction_correct": null,
+    "calls": 104,
+    "cost": 0.35884600000000033
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "sys.4"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "sys.4",
+     "msg.32.tr.0.chunk.0",
+     "msg.2.tr.0.chunk.2",
+     "msg.10.tr.0.chunk.1",
+     "msg.16.tr.0.chunk.3"
+    ],
+    "calls": 392,
+    "cost": 3.2926669999999985
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "sys.4",
+     "msg.32.tr.0.chunk.2",
+     "msg.26.tr.0.chunk.3",
+     "msg.30.tr.0.chunk.0",
+     "msg.4.tr.0.chunk.2",
+     "msg.30.tr.0.chunk.1",
+     "msg.22.tr.0"
+    ],
+    "false_flags": [
+     "msg.22.tr.0",
+     "msg.26.tr.0.chunk.3",
+     "msg.30.tr.0.chunk.0",
+     "msg.30.tr.0.chunk.1",
+     "msg.32.tr.0.chunk.2",
+     "msg.4.tr.0.chunk.2"
+    ],
+    "missed": [],
+    "ranking": [
+     "sys.4",
+     "msg.32.tr.0.chunk.2",
+     "msg.26.tr.0.chunk.3",
+     "msg.30.tr.0.chunk.0",
+     "msg.4.tr.0.chunk.2"
+    ],
+    "calls": 104,
+    "cost": 0.477055
+   },
+   "seconds": 0.46
+  },
+  {
+   "id": "case_25",
+   "units": 72,
+   "interaction": false,
+   "probability": 0.58,
+   "ground_truth": [
+    "msg.40.tr.0"
+   ],
+   "culprit_kinds": [
+    "result"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 7137,
+    "minimal_tokens": 279,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.40.tr.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.40.tr.0"
+    ],
+    "shrink_ratio": 25.580645161290324,
+    "interaction_correct": null,
+    "calls": 164,
+    "cost": 0.5232120000000002
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "tool.lookup_order",
+     "msg.40.tr.0",
+     "msg.48.tr.0",
+     "msg.62.tr.0.chunk.3",
+     "msg.64.tr.0.chunk.1",
+     "msg.66.tr.0.chunk.2",
+     "msg.70.tr.0"
+    ],
+    "false_flags": [
+     "msg.48.tr.0",
+     "msg.62.tr.0.chunk.3",
+     "msg.64.tr.0.chunk.1",
+     "msg.66.tr.0.chunk.2",
+     "msg.70.tr.0",
+     "tool.lookup_order"
+    ],
+    "missed": [],
+    "ranking": [
+     "msg.40.tr.0",
+     "tool.lookup_order",
+     "msg.64.tr.0.chunk.1",
+     "msg.66.tr.0.chunk.2",
+     "msg.48.tr.0"
+    ],
+    "calls": 480,
+    "cost": 3.431405999999993
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.40.tr.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.40.tr.0",
+     "msg.34.tr.0.chunk.1",
+     "msg.52.tr.0",
+     "msg.50.tr.0.chunk.0",
+     "msg.62.tr.0.chunk.1"
+    ],
+    "calls": 164,
+    "cost": 0.614475
+   },
+   "seconds": 0.72
+  },
+  {
+   "id": "case_26",
+   "units": 68,
+   "interaction": false,
+   "probability": 0.49,
+   "ground_truth": [
+    "msg.58.tr.0"
+   ],
+   "culprit_kinds": [
+    "result"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 5492,
+    "minimal_tokens": 320,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.58.tr.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.58.tr.0"
+    ],
+    "shrink_ratio": 17.1625,
+    "interaction_correct": null,
+    "calls": 144,
+    "cost": 0.40737599999999996
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "sys.1",
+     "msg.18.tr.0.chunk.0",
+     "msg.32.tr.0",
+     "msg.58.tr.0"
+    ],
+    "false_flags": [
+     "msg.18.tr.0.chunk.0",
+     "msg.32.tr.0",
+     "sys.1"
+    ],
+    "missed": [],
+    "ranking": [
+     "msg.58.tr.0",
+     "sys.1",
+     "msg.18.tr.0.chunk.0",
+     "msg.32.tr.0",
+     "msg.4.tr.0"
+    ],
+    "calls": 476,
+    "cost": 2.624844000000003
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.58.tr.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.58.tr.0",
+     "tool.get_invoice",
+     "msg.28.tr.0",
+     "tool.lookup_order",
+     "msg.18.tr.0.chunk.2"
+    ],
+    "calls": 144,
+    "cost": 0.45781699999999975
+   },
+   "seconds": 0.62
+  },
+  {
+   "id": "case_27",
+   "units": 50,
+   "interaction": true,
+   "probability": 0.82,
+   "ground_truth": [
+    "msg.14.tr.0",
+    "sys.0"
+   ],
+   "culprit_kinds": [
+    "system",
+    "result"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 6107,
+    "minimal_tokens": 271,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "sys.0",
+     "msg.14.tr.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "sys.0",
+     "msg.14.tr.0"
+    ],
+    "shrink_ratio": 22.535055350553506,
+    "interaction_correct": true,
+    "calls": 268,
+    "cost": 0.5514640000000001
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "sys.0",
+     "msg.14.tr.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "sys.0",
+     "msg.14.tr.0",
+     "msg.32.tr.0.chunk.0",
+     "msg.34.tr.0.chunk.3",
+     "sys.1"
+    ],
+    "calls": 312,
+    "cost": 1.8969509999999998
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.14.tr.0",
+     "sys.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.14.tr.0",
+     "sys.0",
+     "tool.read_config",
+     "msg.24.tr.0.chunk.2",
+     "sys.1"
+    ],
+    "calls": 268,
+    "cost": 0.8844189999999991
+   },
+   "seconds": 0.59
+  },
+  {
+   "id": "case_28",
+   "units": 15,
+   "interaction": false,
+   "probability": 0.74,
+   "ground_truth": [
+    "msg.2.tr.0.chunk.3"
+   ],
+   "culprit_kinds": [
+    "result"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 1128,
+    "minimal_tokens": 188,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.2.tr.0.chunk.3"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.2.tr.0.chunk.3"
+    ],
+    "shrink_ratio": 6.0,
+    "interaction_correct": null,
+    "calls": 168,
+    "cost": 0.09877799999999996
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.2.tr.0.chunk.3"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.2.tr.0.chunk.3",
+     "tool.read_ledger",
+     "tool.search_docs",
+     "sys.3",
+     "sys.0"
+    ],
+    "calls": 116,
+    "cost": 0.13220699999999994
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.2.tr.0.chunk.3"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.2.tr.0.chunk.3",
+     "tool.send_report",
+     "sys.3",
+     "tool.fetch_report",
+     "msg.2.tr.0.chunk.1"
+    ],
+    "calls": 168,
+    "cost": 0.10843100000000004
+   },
+   "seconds": 0.21
+  },
+  {
+   "id": "case_29",
+   "units": 47,
+   "interaction": false,
+   "probability": 0.66,
+   "ground_truth": [
+    "msg.20.tr.0"
+   ],
+   "culprit_kinds": [
+    "result"
+   ],
+   "agentrelay": {
+    "status": "ok",
+    "original_tokens": 4718,
+    "minimal_tokens": 160,
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.20.tr.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.20.tr.0"
+    ],
+    "shrink_ratio": 29.4875,
+    "interaction_correct": null,
+    "calls": 128,
+    "cost": 0.34481199999999984
+   },
+   "loo": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "tool.get_schedule",
+     "msg.20.tr.0",
+     "msg.26.tr.0.chunk.1"
+    ],
+    "false_flags": [
+     "msg.26.tr.0.chunk.1",
+     "tool.get_schedule"
+    ],
+    "missed": [],
+    "ranking": [
+     "msg.20.tr.0",
+     "tool.get_schedule",
+     "msg.26.tr.0.chunk.1",
+     "sys.0",
+     "sys.4"
+    ],
+    "calls": 360,
+    "cost": 1.6959570000000055
+   },
+   "random": {
+    "top1": true,
+    "top3": true,
+    "flagged": [
+     "msg.20.tr.0"
+    ],
+    "false_flags": [],
+    "missed": [],
+    "ranking": [
+     "msg.20.tr.0",
+     "sys.0",
+     "msg.30.tr.0.chunk.4",
+     "tool.read_ledger",
+     "msg.28.tr.0.chunk.3"
+    ],
+    "calls": 128,
+    "cost": 0.3378330000000002
+   },
+   "seconds": 0.39
+  }
+ ]
+}

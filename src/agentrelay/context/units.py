@@ -354,3 +354,9 @@ def substitute(req: LLMRequest, unit_id: str, new_text: str) -> LLMRequest:
         pieces[chunk] = new_text
         out.messages[i].content[b] = block.model_copy(update={"text": "".join(pieces)})
     return out
+
+
+def explained_ids(units: list[ContextUnit]) -> list[str]:
+    """Removable units at the finest level: chunks instead of the tool results they split."""
+    chunked = {u.parent for u in units if u.parent}
+    return [u.id for u in units if u.removable and u.id not in chunked]

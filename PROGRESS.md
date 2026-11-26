@@ -86,8 +86,14 @@ criterion passes.
 - Coverage: replay 92–100%, cassette transport 86%, bisect plumbing 85% (92% combined).
 
 ## M8 — RelayBench
-- [ ] `bench/generate.py`, `bench/run_bench.py`, baselines, `bench/RESULTS.md`
-- [ ] Accept: offline in < 3 min; targets met or gap reported honestly
+- [x] `bench/generate.py` (30 seeded cases, 15–77 units, 8 two-culprit), `bench/run_bench.py`,
+  baselines (leave-one-out, budget-matched random ablation), `bench/RESULTS.md`, `results.json`
+- [x] Accept: offline in 15 s (CI job enforces a 3-minute limit); all three targets met:
+  top-1 100% (≥ 85%), median shrink 22.6× (≥ 10×), 59% fewer model calls than leave-one-out on
+  the 26 cases with > 30 units (≥ 40%). RESULTS.md also states what the targets don't show:
+  random ablation matches top-1 at equal cost (false culprits 41% vs 0%), 2 low-rate cases ranked
+  the culprit first without flagging it (doubled trials fix both), and leave-one-out is cheaper on
+  small contexts.
 
 ## M9 — Docs and launch polish
 - [ ] README, quickstart, docs/, PyPI prep (no publish without go-ahead)
@@ -297,6 +303,18 @@ criterion passes.
   fails_from_start (f(0) already fails: the task itself fails), not_reproduced (exit 4).
 - M7: `relay diff` aligns steps by LCS over (kind, name); aligned steps are "changed" when the
   request hash, response, or error differ, with unified diffs of each.
+- M8: cases plant unique trigger codes ("COBALT-HARBOR-42") in system sections, tool
+  descriptions and tool results (chunks); a rule fires `purge_archive` when all triggers are
+  present (p 0.4–0.91), and a decoy rule on ordinary distractor text fires a different failure
+  (`send_report`, p 0.3) so slippage is exercised. Ground truth = the finest units containing a
+  trigger, checked by a test.
+- M8: every method is charged in model calls that miss a per-method trial cache. Leave-one-out
+  uses the same 20-trial baseline and 3–8-trial sequential test as AgentRelay's search; random
+  ablation gets AgentRelay's exact call budget per case (4 trials per random subset).
+- M8: top-1 = rank-1 unit is a culprit; top-3 = all culprits in the top 3; false culprit rate =
+  wrongly flagged / all flagged; missed = culprits not flagged.
+- M8: `run_bench.py` rewrites `RESULTS.md` only on a full run (`--cases N` is a quick look) and
+  writes a dynamic "Findings" section, re-checking unflagged cases with doubled trials.
 
 ## Known gaps
 - No real model prices are built in (see Decisions); set them in `agentrelay.toml`. Recorded
@@ -304,6 +322,8 @@ criterion passes.
 - `judge()` calls are not cached or counted against the budget yet.
 - Live tests against real APIs (`tests/live/`) are not written yet; everything so far is verified
   offline through the real SDKs with a mocked transport.
+- The opt-in live bench (the three examples against a real model, 10 repetitions each) is not
+  built: it needs an API key and budget approval.
 - Bisect has no cost budget (it runs whole agent replays, whose calls go through the user's own
   client), and its curve is not yet drawn in `report.html` (terminal and JSON only).
 - Not intercepted: Anthropic `messages.stream()` helper, `messages.batches`, beta namespaces, and
