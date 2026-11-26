@@ -18,9 +18,7 @@ ADAPTER = Adapter(
 
 
 def wrap_anthropic(client: Any) -> Proxy:
-    return Proxy(
-        client,
-        children={
-            "messages": lambda messages: Proxy(messages, methods={"create": ADAPTER}),
-        },
-    )
+    def messages(m: Any) -> Proxy:
+        return Proxy(m, methods={"create": ADAPTER}, root=client, path=("messages",))
+
+    return Proxy(client, children={"messages": messages})

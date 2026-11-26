@@ -13,9 +13,12 @@ class Proxy:
 
     * names in `children` return another `Proxy` (e.g. `client.messages`), and
     * names in `methods` return a function that records the call with an `Adapter`.
+
+    `root` is the wrapped client and `path` the attribute path from it to `inner`; replay uses
+    them to call the same method on a copy of the client that serves recorded responses.
     """
 
-    __slots__ = ("_children", "_inner", "_methods")
+    __slots__ = ("_children", "_inner", "_methods", "_path", "_root")
 
     def __init__(
         self,
@@ -23,10 +26,14 @@ class Proxy:
         *,
         children: dict[str, Callable[[Any], Proxy]] | None = None,
         methods: dict[str, Adapter] | None = None,
+        root: Any = None,
+        path: tuple[str, ...] = (),
     ) -> None:
         object.__setattr__(self, "_inner", inner)
         object.__setattr__(self, "_children", children or {})
         object.__setattr__(self, "_methods", methods or {})
+        object.__setattr__(self, "_root", inner if root is None else root)
+        object.__setattr__(self, "_path", path)
 
     def __getattr__(self, name: str) -> Any:
         target = getattr(self._inner, name)
@@ -34,9 +41,10 @@ class Proxy:
             return self._children[name](target)
         if name in self._methods:
             adapter = self._methods[name]
+            root, path = self._root, (*self._path, name)
 
             def recorded(*args: Any, **kwargs: Any) -> Any:
-                return call(adapter, target, args, kwargs)
+                return call(adapter, target, args, kwargs, root=root, path=path)
 
             return recorded
         return target

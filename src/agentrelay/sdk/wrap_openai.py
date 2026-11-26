@@ -27,12 +27,12 @@ RESPONSES = Adapter(
 
 def wrap_openai(client: Any) -> Proxy:
     def completions(c: Any) -> Proxy:
-        return Proxy(c, methods={"create": CHAT})
+        return Proxy(c, methods={"create": CHAT}, root=client, path=("chat", "completions"))
 
-    return Proxy(
-        client,
-        children={
-            "chat": lambda chat: Proxy(chat, children={"completions": completions}),
-            "responses": lambda responses: Proxy(responses, methods={"create": RESPONSES}),
-        },
-    )
+    def chat(c: Any) -> Proxy:
+        return Proxy(c, children={"completions": completions}, root=client, path=("chat",))
+
+    def responses(r: Any) -> Proxy:
+        return Proxy(r, methods={"create": RESPONSES}, root=client, path=("responses",))
+
+    return Proxy(client, children={"chat": chat, "responses": responses})

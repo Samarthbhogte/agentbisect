@@ -158,6 +158,7 @@ class RunRecorder:
         started_at: datetime,
         ended_at: datetime,
         cost_usd: float | None = None,
+        tags: dict[str, str] | None = None,
     ) -> Step | None:
         if not self.enabled:
             return None
@@ -183,6 +184,7 @@ class RunRecorder:
                 tokens_out=response.tokens_out if response else None,
                 cost_usd=cost_usd,
                 request_hash=request_hash(req_dict),
+                tags=dict(tags or {}),
             )
             self.run.steps.append(step)
         self.store.append_step(step)
@@ -198,6 +200,7 @@ class RunRecorder:
         started_at: datetime,
         ended_at: datetime,
         side_effects: bool,
+        extra_tags: dict[str, str] | None = None,
     ) -> Step | None:
         if not self.enabled:
             return None
@@ -205,7 +208,7 @@ class RunRecorder:
         with self._lock:
             index = len(self.run.steps)
             match = match_tool_use(name, args_json, self.run.steps, self._claimed)
-            tags = {"side_effects": str(side_effects).lower()}
+            tags = {"side_effects": str(side_effects).lower(), **(extra_tags or {})}
             depends_on: list[str] = []
             if match:
                 self._claimed.add(match[0])
@@ -250,6 +253,13 @@ _active: list[RunRecorder] = []  # process-wide, so calls made from worker threa
 _active_lock = threading.Lock()
 _implicit: RunRecorder | None = None
 _entry: ContextVar[_EntryContext | None] = ContextVar("agentrelay_entry", default=None)
+# Set by program-level replay (agentrelay.replay.program.ReplayController) while it runs an agent.
+_replay: ContextVar[Any] = ContextVar("agentrelay_replay", default=None)
+
+
+def current_replay() -> Any:
+    """The active replay controller, or None when recording normally."""
+    return _replay.get()
 
 
 def _implicit_name() -> str:
@@ -316,6 +326,9 @@ class run:
         rec = RunRecorder(
             self.name, self.input, labels=self.labels, entrypoint=entry.path if entry else None
         )
+        controller = _replay.get()
+        if controller is not None:
+            controller.on_run_start(rec)  # labels the run and may redirect its store
         self.recorder = rec
         if rec.enabled:
             rec.start()

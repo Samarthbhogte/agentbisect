@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import random
 from collections.abc import Sequence
+from contextvars import ContextVar
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -32,6 +33,11 @@ from agentrelay.providers.base import (
 from agentrelay.schema import canonical_json, sha256_hex
 
 __all__ = ["FakeLLM", "FakeScriptExhausted", "Rule", "text", "text_block", "tool_use"]
+
+
+# Added to every seed. Program-level replay sets it per trial so live continuations of a recorded
+# run draw fresh samples, the way a real model at temperature > 0 would.
+SEED_OFFSET: ContextVar[int] = ContextVar("agentrelay_fake_seed_offset", default=0)
 
 
 class FakeScriptExhausted(RuntimeError):
@@ -57,7 +63,8 @@ class Rule(BaseModel):
 
 
 def rng_for(req: LLMRequest, seed: int | None) -> random.Random:
-    digest = sha256_hex(canonical_json(req.to_dict()) + f"|seed={seed or 0}")
+    effective = (seed or 0) + SEED_OFFSET.get()
+    digest = sha256_hex(canonical_json(req.to_dict()) + f"|seed={effective}")
     return random.Random(int(digest[:16], 16))
 
 

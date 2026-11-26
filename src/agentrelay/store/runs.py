@@ -196,7 +196,7 @@ class RunStore:
         if ref == "last":
             if not ids:
                 raise RunNotFound("no runs recorded yet")
-            return ids[-1]
+            return self._last_original(ids)
         if ref in ids:
             return ref
         matches = [i for i in ids if i.startswith(ref.upper())]
@@ -205,6 +205,17 @@ class RunStore:
         if len(matches) > 1:
             raise AmbiguousRunRef(f"{ref!r} matches {len(matches)} runs: {', '.join(matches[:5])}")
         return matches[0]
+
+    def _last_original(self, ids: list[str]) -> str:
+        """The newest run that is not a replay (replays are labeled `replay_of`)."""
+        for run_id in reversed(ids):
+            try:
+                meta = json.loads((self.run_dir(run_id) / "run.json").read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            if "replay_of" not in (meta.get("labels") or {}):
+                return run_id
+        return ids[-1]
 
     def list(self, flt: RunFilter | None = None) -> list[RunSummary]:
         return self.index.query(flt)

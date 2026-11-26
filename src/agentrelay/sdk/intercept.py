@@ -10,7 +10,7 @@ from typing import Any
 
 from agentrelay._json import to_jsonable
 from agentrelay.providers.base import LLMRequest, LLMResponse
-from agentrelay.sdk.context import current_recorder, disabled, now, safe
+from agentrelay.sdk.context import current_recorder, current_replay, disabled, now, safe
 from agentrelay.sdk.streams import Aggregator, AsyncStreamProxy, StreamProxy
 
 
@@ -31,6 +31,7 @@ def _record(
     native: Any,
     error: BaseException | None,
     started: datetime,
+    tags: dict[str, str] | None = None,
 ) -> None:
     rec = current_recorder()
     if rec is None:
@@ -45,50 +46,76 @@ def _record(
         error=error,
         started_at=started,
         ended_at=now(),
+        tags=tags,
     )
 
 
 def call(
-    adapter: Adapter, fn: Callable[..., Any], args: tuple[Any, ...], kwargs: dict[str, Any]
+    adapter: Adapter,
+    fn: Callable[..., Any],
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+    *,
+    root: Any = None,
+    path: tuple[str, ...] = (),
 ) -> Any:
-    """Call `fn` and record it. Works for sync methods and for methods returning awaitables."""
+    """Call `fn` and record it. Works for sync methods and for methods returning awaitables.
+
+    During program-level replay the controller decides whether the call is served from the
+    recorded cassette (through a copy of the client) or goes live, and may raise
+    `ReplayDivergence`.
+    """
     if disabled():
         return fn(*args, **kwargs)
+    tags: dict[str, str] | None = None
+    controller = current_replay()
+    if controller is not None:
+        fn, tags = controller.route_llm(adapter, fn, kwargs, root=root, path=path)
     started = now()
     try:
         result = fn(*args, **kwargs)
     except Exception as exc:
-        safe(_record, adapter, kwargs, None, exc, started)
+        safe(_record, adapter, kwargs, None, exc, started, tags)
         raise
     if inspect.isawaitable(result):
-        return _finish_async(adapter, result, kwargs, started)
-    return _finish(adapter, result, kwargs, started)
+        return _finish_async(adapter, result, kwargs, started, tags)
+    return _finish(adapter, result, kwargs, started, tags)
 
 
-def _finish(adapter: Adapter, result: Any, kwargs: dict[str, Any], started: datetime) -> Any:
+def _finish(
+    adapter: Adapter,
+    result: Any,
+    kwargs: dict[str, Any],
+    started: datetime,
+    tags: dict[str, str] | None,
+) -> Any:
     if kwargs.get("stream"):
         return StreamProxy(
             result,
             adapter.new_aggregator(),
-            lambda final: _record(adapter, kwargs, final, None, started),
+            lambda final: _record(adapter, kwargs, final, None, started, tags),
         )
-    safe(_record, adapter, kwargs, result, None, started)
+    safe(_record, adapter, kwargs, result, None, started, tags)
     return result
 
 
 async def _finish_async(
-    adapter: Adapter, pending: Any, kwargs: dict[str, Any], started: datetime
+    adapter: Adapter,
+    pending: Any,
+    kwargs: dict[str, Any],
+    started: datetime,
+    tags: dict[str, str] | None,
 ) -> Any:
     try:
         result = await pending
     except Exception as exc:
-        safe(_record, adapter, kwargs, None, exc, started)
+        safe(_record, adapter, kwargs, None, exc, started, tags)
         raise
     if kwargs.get("stream"):
         return AsyncStreamProxy(
             result,
             adapter.new_aggregator(),
-            lambda final: _record(adapter, kwargs, final, None, started),
+            lambda final: _record(adapter, kwargs, final, None, started, tags),
         )
-    safe(_record, adapter, kwargs, result, None, started)
+    safe(_record, adapter, kwargs, result, None, started, tags)
     return result

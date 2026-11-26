@@ -733,6 +733,243 @@ def _show_ci(o: Any) -> None:
     console.print(f"Report: {escape(o.report_path)}")
 
 
+# ---- replay / diff / bisect ---------------------------------------------------------------
+TOOLS_MODES = ("cassette", "live", "cassette-or-live")
+
+
+@app.command("replay")
+def replay_cmd(
+    run_ref: Annotated[
+        str, typer.Argument(metavar="RUN", help="Run id, unique prefix, or 'last'.")
+    ],
+    mode: Annotated[
+        str, typer.Option(help="strict: stop at the first difference; fork: go live from there.")
+    ] = "strict",
+    fork_at: Annotated[
+        str | None, typer.Option(help="Replay steps before this one (s0003 or 3), then go live.")
+    ] = None,
+    tools: Annotated[str, typer.Option(help="cassette, live, or cassette-or-live.")] = "cassette",
+    allow_live_side_effects: Annotated[
+        bool, typer.Option("--allow-live-side-effects", help="Let side-effect tools run live.")
+    ] = False,
+    seed: Annotated[int, typer.Option(help="Seed for frozen time/random and live fake calls.")] = 0,
+    as_json: JsonFlag = False,
+) -> None:
+    """Re-run a recorded agent, serving recorded responses (needs an @relay.entrypoint)."""
+    from agentrelay.cli_replay import parse_step_index
+    from agentrelay.replay.program import ReplayError, replay_program
+
+    if mode not in ("strict", "fork") or tools not in TOOLS_MODES:
+        err.print(
+            "[red]error:[/red] --mode is strict|fork; --tools is cassette|live|cassette-or-live"
+        )
+        raise typer.Exit(2)
+    store = _store()
+    run = _load(store, run_ref)
+    try:
+        k = parse_step_index(run, fork_at) if fork_at is not None else None
+        result = replay_program(
+            run,
+            mode=mode,  # type: ignore[arg-type]
+            fork_at=k,
+            tools=tools,  # type: ignore[arg-type]
+            allow_live_side_effects=allow_live_side_effects,
+            seed=seed,
+        )
+    except (ValueError, ReplayError) as exc:
+        err.print(f"[red]error:[/red] {escape(str(exc))}")
+        raise typer.Exit(2) from exc
+    if as_json:
+        _print_json(
+            result.model_dump(mode="json", exclude={"run"})
+            | {"run_id": result.run.id if result.run else None}
+        )
+    else:
+        _show_replay(result)
+    raise typer.Exit(5 if result.divergence else 1 if result.error else 0)
+
+
+def _show_replay(r: Any) -> None:
+    label = r.mode + (f", fork at step {r.fork_at}" if r.fork_at is not None else "")
+    console.print(
+        f"[bold]AgentRelay replay[/bold] — run {r.original_id} ({label}, tools {r.tools})"
+    )
+    console.print(f"LLM calls:  {r.served_llm_calls} from the recording, {r.live_llm_calls} live")
+    console.print(
+        f"Tool calls: {r.served_tool_calls} from the recording, {r.live_tool_calls} "
+        f"live, {r.refused_tool_calls} refused (side effects)"
+    )
+    if r.run is not None:
+        same = "[green]same as recorded[/green]" if r.output_matches else "[yellow]differs[/yellow]"
+        console.print(f"Output:     {same}")
+        console.print(f"Replay run: {r.run.id}   (relay diff {r.original_id[:10]} {r.run.id[:10]})")
+    if r.divergence is not None:
+        d = r.divergence
+        console.print(
+            f"\n[red]Diverged at {d.step_id or f'LLM call #{d.call_index + 1}'}:[/red] "
+            f"{escape(d.reason)}"
+        )
+        if d.diff:
+            console.print(escape(_clip(d.diff, 60)))
+    if r.error:
+        console.print(f"\n[red]The agent raised:[/red] {escape(r.error)}")
+
+
+def _clip(text: str, lines: int) -> str:
+    rows = text.splitlines()
+    return "\n".join(
+        rows[:lines] + ([f"… {len(rows) - lines} more lines"] if len(rows) > lines else [])
+    )
+
+
+@app.command("diff")
+def diff_cmd(
+    run_a: Annotated[str, typer.Argument(metavar="RUN_A")],
+    run_b: Annotated[str, typer.Argument(metavar="RUN_B")],
+    as_json: JsonFlag = False,
+) -> None:
+    """Compare two runs step by step."""
+    from agentrelay.replay.diff import diff_runs
+
+    store = _store()
+    a, b = _load(store, run_a), _load(store, run_b)
+    d = diff_runs(a, b)
+    if as_json:
+        _print_json(d.model_dump(mode="json"))
+        return
+    console.print(
+        f"[bold]AgentRelay diff[/bold] — {a.id} ({escape(a.name)}) → {b.id} ({escape(b.name)})"
+    )
+    marks = {
+        "same": " ",
+        "changed": "[yellow]~[/yellow]",
+        "removed": "[red]-[/red]",
+        "inserted": "[green]+[/green]",
+    }
+    table = Table(box=None, header_style="bold")
+    for col in ("", "A", "B", "step"):
+        table.add_column(col)
+    for s in d.steps:
+        table.add_row(marks[s.kind], s.a or "", s.b or "", escape(s.label))
+    console.print(table)
+    for s in d.steps:
+        if s.kind == "changed":
+            console.print(f"\n[bold]{s.a} → {s.b}  {escape(s.label)}[/bold]")
+            for title, text in (("request", s.request_diff), ("response", s.response_diff)):
+                if text:
+                    console.print(f"[dim]{title}[/dim]")
+                    console.print(escape(_clip(text, 40)))
+    c, dl = d.counts, d.deltas
+    console.print(
+        f"\n{c['same']} same, {c['changed']} changed, {c['removed']} removed, "
+        f"{c['inserted']} inserted"
+    )
+    parts = []
+    for key, label, fmt in (
+        ("tokens_in", "input tokens", "{:+,.0f}"),
+        ("tokens_out", "output tokens", "{:+,.0f}"),
+        ("cost_usd", "cost", "${:+.4f}"),
+        ("duration_s", "time", "{:+.2f}s"),
+    ):
+        if dl.get(key) is not None:
+            parts.append(f"{label} {fmt.format(dl[key])}")
+    if parts:
+        console.print("Deltas (B − A): " + ", ".join(parts))
+
+
+@app.command("bisect")
+def bisect_cmd(
+    run_ref: Annotated[
+        str, typer.Argument(metavar="RUN", help="Run id, unique prefix, or 'last'.")
+    ],
+    oracle: Annotated[str, typer.Option(help="A run-level oracle: FILE.py:NAME or MODULE:NAME.")],
+    tools: Annotated[
+        str, typer.Option(help="cassette-or-live (default), cassette, or live.")
+    ] = "cassette-or-live",
+    trials: Annotated[int, typer.Option(min=1, help="Max replays per measured step.")] = 8,
+    threshold: Annotated[float, typer.Option(help="Failure rate that counts as failing.")] = 0.5,
+    full_curve: Annotated[bool, typer.Option("--full-curve", help="Measure every step.")] = False,
+    allow_live_side_effects: Annotated[
+        bool, typer.Option("--allow-live-side-effects", help="Let side-effect tools run live.")
+    ] = False,
+    as_json: JsonFlag = False,
+) -> None:
+    """Find the first step after which the run keeps failing."""
+    from agentrelay.cli_replay import run_bisect
+    from agentrelay.oracles.api import OracleError
+    from agentrelay.replay.program import ReplayError
+
+    if tools not in TOOLS_MODES:
+        err.print("[red]error:[/red] --tools is cassette|live|cassette-or-live")
+        raise typer.Exit(2)
+    store = _store()
+    run = _load(store, run_ref)
+    try:
+        report = run_bisect(
+            run.id,
+            oracle_ref=oracle,
+            tools=tools,  # type: ignore[arg-type]
+            max_trials=trials,
+            threshold=threshold,
+            full_curve=full_curve,
+            allow_live_side_effects=allow_live_side_effects,
+            store=store,
+        )
+    except OracleError as exc:
+        err.print(f"[red]oracle error:[/red] {escape(str(exc))}")
+        raise typer.Exit(2) from exc
+    except ReplayError as exc:
+        err.print(f"[red]error:[/red] {escape(str(exc))}")
+        raise typer.Exit(2) from exc
+    path = store.save_artifact(run.id, "bisect.json", report)
+    if as_json:
+        _print_json(report.model_dump(mode="json"))
+    else:
+        _show_bisect(report, run, path, oracle)
+    raise typer.Exit(0 if report.result.status != "not_reproduced" else 4)
+
+
+def _show_bisect(r: Any, run: Any, path: Path, oracle_ref: str) -> None:
+    console.print(f"[bold]AgentRelay bisect[/bold] — run {run.id[:10]}… ({escape(run.name)})")
+    console.print(
+        f"Oracle: {escape(r.oracle)}   fingerprint: {escape(r.fingerprint)}   tools: {r.tools}\n"
+    )
+    table = Table(
+        box=None,
+        header_style="bold",
+        title="Failure rate when continuing live from each step",
+        title_justify="left",
+    )
+    for col in ("from step", "kind", "name", "failure rate", ""):
+        table.add_column(col)
+    for p in r.result.curve:
+        step = run.steps[p.k] if p.k < len(run.steps) else None
+        e = p.estimate
+        bar = "█" * round(10 * e.p_hat)
+        flag = "[bold red]← first bad step[/bold red]" if p.k == r.result.first_bad else ""
+        table.add_row(
+            step.id if step else "(end)",
+            step.kind if step else "replayed",
+            escape(step.name) if step else "everything",
+            f"{100 * e.p_hat:3.0f}%  "
+            f"[{100 * e.ci_low:.0f}–{100 * e.ci_high:.0f}%] n={e.trials}  {bar}",
+            flag,
+        )
+    console.print(table)
+    if not r.result.monotone:
+        console.print(
+            "[yellow]The curve is not monotone: the first bad step is approximate.[/yellow]"
+        )
+    console.print(f"\n{escape(r.message)}")
+    console.print(f"\nSpent: {r.trials} replays" + (f"; errors: {r.errors}" if r.errors else ""))
+    console.print(f"Saved: {escape(str(path))}")
+    if r.explain_step:
+        console.print(
+            f"Next:  relay explain {run.id[:10]} --step {r.explain_step} --oracle "
+            "<decision-level oracle>"
+        )
+
+
 # ---- doctor -------------------------------------------------------------------------------
 @app.command()
 def doctor() -> None:

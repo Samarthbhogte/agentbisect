@@ -73,11 +73,17 @@ criterion passes.
   (`examples/file_cleanup_agent/regression/`), so the action is exercised on every push.
 
 ## M7 — Program replay, diff, bisect
-- [ ] `replay/program.py`, `cassette.py`, `determinism.py`, `relay replay`, `relay diff`, `relay bisect`
-- [ ] Accept: strict replay makes zero live calls, same output
-- [ ] Accept: changed system prompt → `ReplayDivergence` with readable diff
-- [ ] Accept: bisect finds stale-document step on refund_agent
-- [ ] Accept: side-effect tool never runs in replay unless allowed
+- [x] `replay/program.py`, `cassette.py`, `determinism.py`, `diff.py`, `algo/bisect.py`,
+  `relay replay`, `relay diff`, `relay bisect`
+- [x] Accept: strict replay of all three examples makes zero live calls (FakeLLM call counter)
+  and reproduces the same output; the replay's steps are identical to the recording
+- [x] Accept: changing the system prompt raises `ReplayDivergence` at `s0000` ("the system prompt
+  changed") with a unified diff; `relay replay` exits 5
+- [x] Accept: on refund_agent, bisect reports `s0003`, the `search_policy("refund window")` call
+  that retrieved the stale document (f = 25% up to s0002, 100% from s0003); suggests explain s0004
+- [x] Accept: a `side_effects=True` tool that writes a sentinel file never runs in strict,
+  fork/live or fork/cassette-or-live replay, and runs only with `allow_live_side_effects=True`
+- Coverage: replay 92–100%, cassette transport 86%, bisect plumbing 85% (92% combined).
 
 ## M8 — RelayBench
 - [ ] `bench/generate.py`, `bench/run_bench.py`, baselines, `bench/RESULTS.md`
@@ -264,6 +270,33 @@ criterion passes.
 - M6: `relay ci` exit codes: 1 if any scenario regressed or errored, else 0 (skips don't fail).
 - M6: a `pytest11` entry point registers the `agentrelay` marker in projects that install
   agentrelay, so emitted tests run without "unknown marker" warnings.
+- M7: served LLM calls go through a copy of the user's client (`client.with_options(http_client=
+  ...)`) whose in-memory HTTP layer returns the recorded provider-native response, re-encoded as
+  server-sent events for streaming calls. The agent receives genuine SDK objects; live calls use
+  the original client. Proxies now carry the root client and attribute path for this.
+- M7: a third tools mode, `cassette-or-live` (recorded result when name and arguments match,
+  read-only tools live otherwise, side-effect tools refused). Strict `cassette` cannot continue a
+  diverged run (a live model that chooses a new search query would raise `ToolNotInCassette`),
+  so `relay bisect` defaults to `cassette-or-live`; `relay replay` keeps the spec's `cassette`.
+- M7: `fork_at=k` counts all steps (LLM and tool): recorded LLM calls with index < k are served,
+  later ones go live; with `tools=live`, recorded tool results before k are still served.
+  Strict replay that makes fewer LLM calls than were recorded is also a divergence.
+- M7: FakeLLM gained `SEED_OFFSET` (a context variable added to every seed). Program replay sets
+  it to the trial seed, so live continuations draw fresh samples per trial the way a real model at
+  temperature > 0 would; recordings (offset 0) are unchanged.
+- M7: determinism: `time.time`, `uuid.uuid4` and `random` are frozen process-wide during replay;
+  `datetime.now()` is frozen only in the entrypoint's module (its `datetime` name is swapped).
+  Replacing `datetime.datetime` globally broke pydantic schema building inside the LLM SDKs, which
+  happens lazily during a replay, so it is not done. Limitations are in the module docstring.
+- M7: replays are recorded as new runs labeled `replay_of` / `replay_mode`; `last` now means the
+  newest run that is not a replay. Bisect trials run with an in-memory store, so they don't fill
+  `.agentrelay/`.
+- M7: bisect measures each fork point sequentially (min 3, max `--trials` 8 replays, threshold
+  0.5, trial seeds 1..n), binary-searches the first k that still fails, and reports the curve,
+  whether it is monotone, and the first LLM call at or after k to explain. Statuses: ok,
+  fails_from_start (f(0) already fails: the task itself fails), not_reproduced (exit 4).
+- M7: `relay diff` aligns steps by LCS over (kind, name); aligned steps are "changed" when the
+  request hash, response, or error differ, with unified diffs of each.
 
 ## Known gaps
 - No real model prices are built in (see Decisions); set them in `agentrelay.toml`. Recorded
@@ -271,6 +304,8 @@ criterion passes.
 - `judge()` calls are not cached or counted against the budget yet.
 - Live tests against real APIs (`tests/live/`) are not written yet; everything so far is verified
   offline through the real SDKs with a mocked transport.
+- Bisect has no cost budget (it runs whole agent replays, whose calls go through the user's own
+  client), and its curve is not yet drawn in `report.html` (terminal and JSON only).
 - Not intercepted: Anthropic `messages.stream()` helper, `messages.batches`, beta namespaces, and
   OpenAI `responses.stream()` / `chat.completions.parse()`. Only the methods the spec names are.
 - A stream abandoned without being exhausted, closed, or exited is never recorded.
