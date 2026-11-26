@@ -324,4 +324,19 @@ def retry_after_seconds(exc: Exception) -> float | None:
 
 def _short(exc: Exception, limit: int = 300) -> str:
     text = " ".join(str(exc).split())
+    detail = _body_message(getattr(exc, "body", None))
+    if detail and detail not in text:
+        text = f"{text} - {' '.join(detail.split())}"
     return text if len(text) <= limit else text[: limit - 1] + "…"
+
+
+def _body_message(body: Any) -> str | None:
+    """The human-readable message in an API error body (`{"error": {"message": ...}}`, possibly
+    wrapped in a list, as Google returns it)."""
+    if isinstance(body, list) and body:
+        body = body[0]
+    if isinstance(body, dict):
+        inner = body.get("error", body)
+        message = inner.get("message") if isinstance(inner, dict) else None
+        return str(message) if message else None
+    return None

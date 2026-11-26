@@ -237,3 +237,58 @@ def test_responses_request_items() -> None:
         ("user", ["tool_result"]),
     ]
     assert req.messages[2].content[0].text == "sunny"
+
+
+def test_tool_call_extras_like_gemini_thought_signatures_survive_round_trips() -> None:
+    """Gemini 3 rejects a later turn whose earlier tool calls lost their thought signature, so
+    extras on a tool call must come back unchanged when a request or response is rebuilt."""
+    from agentbisect.providers.openai import (
+        ChatStreamAggregator,
+        chat_request_from_native,
+        chat_request_to_native,
+        chat_response_from_native,
+        chat_response_to_native,
+    )
+
+    signature = {"google": {"thought_signature": "c2lnbmF0dXJl"}}
+    call = {
+        "id": "call_1",
+        "type": "function",
+        "function": {"name": "read_file", "arguments": '{"path": "/p/README.md"}'},
+        "extra_content": signature,
+    }
+    native = {
+        "model": "gemini-3-flash-preview",
+        "max_completion_tokens": 100,
+        "messages": [
+            {"role": "user", "content": "clean up"},
+            {"role": "assistant", "content": None, "tool_calls": [call]},
+            {"role": "tool", "tool_call_id": "call_1", "content": "README text"},
+        ],
+    }
+    rebuilt = chat_request_to_native(chat_request_from_native(native))
+    assert rebuilt["messages"][1]["tool_calls"][0]["extra_content"] == signature
+
+    completion = {
+        "id": "c1",
+        "model": "m",
+        "choices": [
+            {
+                "index": 0,
+                "finish_reason": "tool_calls",
+                "message": {"role": "assistant", "content": None, "tool_calls": [call]},
+            }
+        ],
+        "usage": {"prompt_tokens": 1, "completion_tokens": 1},
+    }
+    served = chat_response_to_native(
+        chat_response_from_native(completion), model="m", completion_id="c1"
+    )
+    assert served["choices"][0]["message"]["tool_calls"][0]["extra_content"] == signature
+
+    agg = ChatStreamAggregator()
+    agg.feed(
+        {"id": "c1", "model": "m", "choices": [{"delta": {"tool_calls": [{**call, "index": 0}]}}]}
+    )
+    agg.feed({"choices": [{"delta": {}, "finish_reason": "tool_calls"}]})
+    assert agg.result()["choices"][0]["message"]["tool_calls"][0]["extra_content"] == signature

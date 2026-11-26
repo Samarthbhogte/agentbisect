@@ -88,6 +88,33 @@ _CHAT_CORE = frozenset(
 )
 
 
+_CALL_CORE = ("id", "type", "function")
+
+
+def _tool_call_block(call: dict[str, Any]) -> ContentBlock:
+    """A chat tool call as a `tool_use` block. Provider extras on the call (e.g. Gemini's
+    `extra_content` thought signature, which Gemini 3 requires on later turns) go in `raw` so they
+    are sent back unchanged when the request is rebuilt."""
+    fn = call.get("function", {})
+    extras = {k: v for k, v in call.items() if k not in _CALL_CORE and v is not None}
+    return ContentBlock(
+        type="tool_use",
+        tool_use_id=call.get("id"),
+        tool_name=fn.get("name"),
+        tool_input=_parse_args(fn.get("arguments")),
+        raw=extras or None,
+    )
+
+
+def _tool_call_to_native(b: ContentBlock) -> dict[str, Any]:
+    return {
+        "id": b.tool_use_id,
+        "type": "function",
+        "function": {"name": b.tool_name, "arguments": json.dumps(b.tool_input or {})},
+        **(b.raw or {}),
+    }
+
+
 def chat_request_from_native(kwargs: dict[str, Any]) -> LLMRequest:
     k = clean_kwargs(kwargs)
     system: list[str] = []
@@ -105,16 +132,7 @@ def chat_request_from_native(kwargs: dict[str, Any]) -> LLMRequest:
             _append(messages, "user", [block])
         elif role == "assistant":
             blocks = _parts(m.get("content"))
-            for call in m.get("tool_calls") or []:
-                fn = call.get("function", {})
-                blocks.append(
-                    ContentBlock(
-                        type="tool_use",
-                        tool_use_id=call.get("id"),
-                        tool_name=fn.get("name"),
-                        tool_input=_parse_args(fn.get("arguments")),
-                    )
-                )
+            blocks.extend(_tool_call_block(call) for call in m.get("tool_calls") or [])
             _append(messages, "assistant", blocks)
         else:
             _append(messages, "user", _parts(m.get("content")))
@@ -182,15 +200,7 @@ def _chat_message_to_native(m: Message) -> list[dict[str, Any]]:
     if m.role == "assistant":
         text = "".join(b.text or "" for b in m.content if b.type == "text")
         out: dict[str, Any] = {"role": "assistant", "content": text or None}
-        calls = [
-            {
-                "id": b.tool_use_id,
-                "type": "function",
-                "function": {"name": b.tool_name, "arguments": json.dumps(b.tool_input or {})},
-            }
-            for b in m.content
-            if b.type == "tool_use"
-        ]
+        calls = [_tool_call_to_native(b) for b in m.content if b.type == "tool_use"]
         if calls:
             out["tool_calls"] = calls
         return [out]
@@ -214,16 +224,7 @@ def chat_response_from_native(completion: Any) -> LLMResponse:
     choice = (c.get("choices") or [{}])[0]
     msg = choice.get("message") or {}
     blocks = _parts(msg.get("content"))
-    for call in msg.get("tool_calls") or []:
-        fn = call.get("function", {})
-        blocks.append(
-            ContentBlock(
-                type="tool_use",
-                tool_use_id=call.get("id"),
-                tool_name=fn.get("name"),
-                tool_input=_parse_args(fn.get("arguments")),
-            )
-        )
+    blocks.extend(_tool_call_block(call) for call in msg.get("tool_calls") or [])
     usage = c.get("usage") or {}
     return LLMResponse(
         content=blocks,
@@ -236,14 +237,7 @@ def chat_response_from_native(completion: Any) -> LLMResponse:
 def chat_response_to_native(resp: LLMResponse, *, model: str, completion_id: str) -> dict[str, Any]:
     text = resp.text()
     message: dict[str, Any] = {"role": "assistant", "content": text or None}
-    calls = [
-        {
-            "id": b.tool_use_id,
-            "type": "function",
-            "function": {"name": b.tool_name, "arguments": json.dumps(b.tool_input or {})},
-        }
-        for b in resp.tool_calls()
-    ]
+    calls = [_tool_call_to_native(b) for b in resp.tool_calls()]
     if calls:
         message["tool_calls"] = calls
     tin, tout = resp.tokens_in or 0, resp.tokens_out or 0
@@ -280,12 +274,19 @@ class ChatStreamAggregator:
                 self.content.append(delta["content"])
             for tc in delta.get("tool_calls") or []:
                 slot = self.calls.setdefault(
-                    tc.get("index", 0), {"id": None, "name": "", "arguments": ""}
+                    tc.get("index", 0), {"id": None, "name": "", "arguments": "", "extras": {}}
                 )
                 fn = tc.get("function") or {}
                 slot["id"] = tc.get("id") or slot["id"]
                 slot["name"] += fn.get("name") or ""
                 slot["arguments"] += fn.get("arguments") or ""
+                slot["extras"].update(
+                    {
+                        k: v
+                        for k, v in tc.items()
+                        if k not in (*_CALL_CORE, "index") and v is not None
+                    }
+                )
             if choice.get("finish_reason"):
                 self.finish_reason = choice["finish_reason"]
 
@@ -297,6 +298,7 @@ class ChatStreamAggregator:
                     "id": s["id"],
                     "type": "function",
                     "function": {"name": s["name"], "arguments": s["arguments"]},
+                    **s["extras"],
                 }
                 for _, s in sorted(self.calls.items())
             ]
