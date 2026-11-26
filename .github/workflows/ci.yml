@@ -45,3 +45,27 @@ jobs:
       - run: uv sync --all-extras
       - run: uv run python bench/run_bench.py --out "$RUNNER_TEMP/RESULTS.md" --json "$RUNNER_TEMP/results.json"
       - run: cat "$RUNNER_TEMP/RESULTS.md" >> "$GITHUB_STEP_SUMMARY"
+
+  # The package builds cleanly and the README quickstart works as written, without an API key.
+  package-and-quickstart:
+    runs-on: ubuntu-latest
+    env:
+      UV_PYTHON: "3.12"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      - run: uv build
+      - run: uvx twine check dist/*
+      - run: uv sync --all-extras
+      - run: uv run python -m examples.file_cleanup_agent.agent --provider fake --seed 2
+      - run: uv run relay show last
+      - run: >-
+          uv run relay explain last --step auto
+          --oracle examples/file_cleanup_agent/oracles.py:deletes_outside_tmp
+          --provider fake --fake-rules examples/file_cleanup_agent/fake_rules.py --html
+      - run: >-
+          uv run relay emit-test last --step s0002 --out my_regressions
+          --system-prompt examples.file_cleanup_agent.agent:SYSTEM_FIXED
+      - run: AGENTRELAY_PROVIDER=fake uv run pytest my_regressions
+      - run: uv run python -m examples.refund_agent.agent --provider fake --seed 7
+      - run: uv run relay bisect last --oracle examples/refund_agent/oracles.py:wrong_refund

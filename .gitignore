@@ -8,3 +8,4 @@ __pycache__/
 .coverage
 dist/
 .agentrelay/
+my_regressions/
